@@ -1,0 +1,26 @@
+{
+  "name": "dev8",
+  "description": "Eight representative cases used during development. Cheap enough to run after every candidate; broad enough that a win here is unlikely to be a fluke. Promote nothing on dev8 alone -- re-run bench/shapes/official.json before recording a headline number.",
+  "defaults": {
+    "batch_size": 8,
+    "seq_len": 128,
+    "d_model": 512,
+    "num_heads": 8,
+    "ffn_dim": 2048,
+    "num_layers": 6,
+    "causal": false,
+    "dtype": "float32",
+    "padding_ratio": 0.0,
+    "input_scale": 1.0
+  },
+  "cases": [
+    {"name": "default",      "note": "The script's own defaults. 1024 tokens, ~19M params, ~90 kernel launches per forward. Launch-bound, not compute-bound."},
+    {"name": "default-bf16", "dtype": "bfloat16", "note": "Same shape, reduced precision. Checks that the tolerance budget survives bf16."},
+    {"name": "default-fp16", "dtype": "float16",  "note": "Same shape, fp16. Narrower dynamic range than bf16, wider mantissa."},
+    {"name": "causal",       "causal": true, "note": "Causal masking on. The baseline rebuilds the triangular mask once per layer."},
+    {"name": "padded",       "padding_ratio": 0.4, "note": "Padding on. Three masked_fill sites become live; a naive SDPA swap silently fails here."},
+    {"name": "long-seq",     "seq_len": 1024, "batch_size": 2, "note": "Attention becomes O(S^2)-dominant. Different bottleneck from the default."},
+    {"name": "wide-batch",   "batch_size": 64, "seq_len": 64, "note": "Same token count, more parallelism, shorter attention."},
+    {"name": "deep-wide",    "d_model": 1024, "ffn_dim": 4096, "num_layers": 12, "batch_size": 4, "note": "Compute-bound end of the grid. Where matmul quality starts to matter more than launch count."}
+  ]
+}

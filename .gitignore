@@ -1,0 +1,33 @@
+# Reference material — cloned, never committed.
+/ref/
+
+# Generated evidence. Every run writes here; nothing here is source.
+runs/
+outputs/
+profile/
+*.ncu-rep
+*.nsys-rep
+*.sqlite
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.cache/
+build/
+dist/
+*.egg-info/
+# torch is deliberately unpinned: the right wheel depends on the CUDA
+# runtime of whichever box is rented that day. See docs/reproduction.md.
+uv.lock
+
+# Editors / OS
+.DS_Store
+.claude/
+.codex/
+.idea/
+.vscode/
+
+# Agent search workspaces. The search happens here; the release tree stays clean.
+workspaces/

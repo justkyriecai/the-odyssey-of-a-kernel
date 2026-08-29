@@ -1,0 +1,23 @@
+[project]
+name = "odyssey-of-a-kernel"
+version = "0.1.0"
+description = "Agent-driven kernel optimization for TikTok TechJam 2026 Track 3."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.6",
+    "numpy>=1.26",
+]
+
+[project.optional-dependencies]
+plots = ["matplotlib>=3.8"]
+
+[project.scripts]
+odyssey = "odyssey.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["odyssey", "kernels"]

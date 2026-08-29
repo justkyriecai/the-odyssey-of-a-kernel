@@ -1,0 +1,20 @@
+{
+  "name": "official",
+  "description": "PLACEHOLDER. The Track 3 appendix publishes the full shape list that will be used for evaluation; paste it here before D2. Until then this file holds only the script's documented defaults, and any claim made against it is a claim about one shape.",
+  "todo": "Replace `cases` with the appendix grid. Keep `defaults` aligned with the script's argparse defaults so a case only has to name what it changes.",
+  "defaults": {
+    "batch_size": 8,
+    "seq_len": 128,
+    "d_model": 512,
+    "num_heads": 8,
+    "ffn_dim": 2048,
+    "num_layers": 6,
+    "causal": false,
+    "dtype": "float32",
+    "padding_ratio": 0.0,
+    "input_scale": 1.0
+  },
+  "cases": [
+    {"name": "default", "note": "argparse defaults of torch_transformer_benchmark.py"}
+  ]
+}

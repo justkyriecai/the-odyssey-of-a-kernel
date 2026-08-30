@@ -22,6 +22,9 @@ The lineage is deliberate and each rung has a job:
     compiled-*    the fused body handed to torch.compile inside the candidate:
                   Inductor's fusion plus (in the -ro variants) cudagraph trees.
                   GEMMs stay on cuBLAS so the numerics track the reference.
+    flash-fp32    Triton online-softmax attention, IEEE fp32 accumulation,
+                  O(S*d) memory -- the only route to the S=100000 stress shape,
+                  whose scores would otherwise be 12.8 TB.
     dispatch      the shipping layer. Per geometry, use whichever candidate a
                   calibration run proved correct and faster -- otherwise fall
                   back to the baseline path, so the answer is never slower than
@@ -30,10 +33,10 @@ The lineage is deliberate and each rung has a job:
 
 from __future__ import annotations
 
-from . import dispatch, v0_passthrough, v1_fused_attention, v2_cuda_graph, v3_compiled
+from . import dispatch, v0_passthrough, v1_fused_attention, v2_cuda_graph, v3_compiled, v4_flash
 
 CANDIDATES: dict = {}
-for _module in (v0_passthrough, v1_fused_attention, v2_cuda_graph, v3_compiled, dispatch):
+for _module in (v0_passthrough, v1_fused_attention, v2_cuda_graph, v3_compiled, v4_flash, dispatch):
     CANDIDATES.update(_module.CANDIDATES)
 
 __all__ = [
@@ -42,5 +45,6 @@ __all__ = [
     "v1_fused_attention",
     "v2_cuda_graph",
     "v3_compiled",
+    "v4_flash",
     "dispatch",
 ]

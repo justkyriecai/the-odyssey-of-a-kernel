@@ -99,7 +99,7 @@ unmodified, with the candidate patched into `UserOptimizedTransformer` at
 runtime:
 
 ```bash
-python -m odyssey official dispatch --shapes official --case default -- --atol 0.001 --rtol 0.01
+python -m odyssey official dispatch --shapes official --case center -- --atol 0.001 --rtol 0.01
 ```
 
 This prints exactly what the organizers would see and returns their exit code:

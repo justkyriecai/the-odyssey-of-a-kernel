@@ -17,10 +17,15 @@
 `batch_size`, `seq_len`, `d_model`, `num_heads`, `ffn_dim`, `num_layers`,
 `causal`, `dtype` (`float32` / `float16` / `bfloat16`), `padding_ratio`.
 
-Script defaults: `B=8, S=128, d_model=512, heads=8, ffn=2048, layers=6,
-causal=False, dtype=float32, padding_ratio=0.0`. That is 1024 tokens through
-~18.9M parameters -- the shape profile of a ranking or retrieval model, not an
-LLM. Roughly 90 kernel launches per forward for about 40 GFLOP of arithmetic.
+The evaluation grid (`bench/shapes/official.json`, from Appendix 3.7) is a
+one-factor sweep around `B=64, S=128, d_model=128, heads=4, ffn=128, layers=4`:
+batch to 10000, width 32-1024 with `ffn_dim = d_model` (1:1, not 4:1), heads
+1-16 so `head_dim` spans 8 to 256, sequence 32-1024, plus a `S=100000` stress
+shape the eager baseline cannot even run (see `docs/benchmark-anatomy.md` §9).
+**Every shape in the grid is causal.** The center point is ~0.4M parameters --
+the shape profile of a ranking or retrieval model, and even more launch-bound
+than the script's own defaults. dtype, padding and input scale are not grid
+columns; they default to the script's defaults and can be moved by flags.
 
 ### The reference computation, exactly
 
@@ -61,7 +66,7 @@ The script's docstring says `0.001 / 0.01`; its argparse defaults say
 Run the gate through the organizer's own `main()`:
 
 ```bash
-python -m odyssey official <candidate> --shapes dev --case default -- --atol 0.001 --rtol 0.01
+python -m odyssey official <candidate> --shapes dev --case center -- --atol 0.001 --rtol 0.01
 ```
 
 ## Development shapes
@@ -69,19 +74,23 @@ python -m odyssey official <candidate> --shapes dev --case default -- --atol 0.0
 Use these eight before running the full grid. Cheap enough to run after every
 change; broad enough that a win here is unlikely to be a fluke.
 
-| Case | Shape | Condition | Why it is in the set |
-|---|---|---|---|
-| `default` | B8 S128 d512 f2048 L6 | fp32 | The script's own defaults. Launch-bound. |
-| `default-bf16` | same | bf16 | Does the tolerance budget survive reduced precision. |
-| `default-fp16` | same | fp16 | Wider mantissa than bf16, narrower range. |
-| `causal` | same | causal | The baseline rebuilds the triangle once per layer. |
-| `padded` | same | padding 0.4 | Three masking sites become live. |
-| `long-seq` | B2 S1024 | fp32 | Attention goes O(S^2)-dominant. |
-| `wide-batch` | B64 S64 | fp32 | Same tokens, more parallelism, shorter attention. |
-| `deep-wide` | B4 d1024 f4096 L12 | fp32 | The compute-bound end of the grid. |
+All cases are causal (as is every official shape) and anchored on the grid's
+center point:
 
-`bench/shapes/official.json` is a placeholder until the appendix grid is pasted
-in. Until then, any claim made against it is a claim about one shape.
+| Case | Deviation from center | Why it is in the set |
+|---|---|---|
+| `center` | -- | The grid's center. 8192 tokens, ~0.4M params. Launch-bound. |
+| `center-bf16` | bf16 | Does the tolerance budget survive reduced precision. |
+| `center-fp16` | fp16 | Wider mantissa than bf16, narrower range. |
+| `center-padded` | padding 0.4 | Three output-masking sites become live. |
+| `batch-1` | B=1 | The latency floor; launch overhead is the wall clock. |
+| `batch-128` | B=128 | The large-batch end that still iterates quickly. |
+| `wide-1024` | d=1024, ffn=1024 | head_dim 256, the flash upper limit. |
+| `heads-16` | H=16 | head_dim 8, the fused-backend lower edge. |
+| `seq-1024` | S=1024 | O(S^2) attention; nearest cheap proxy for stress-100k. |
+
+`batch-10000` and `stress-100k` live only in the official set -- the first is
+too slow to iterate on, the second needs an 80 GB card and a chunked reference.
 
 ## Workflow Requirements
 

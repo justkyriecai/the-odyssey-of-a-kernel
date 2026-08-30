@@ -14,4 +14,4 @@ SHAPES="${SHAPES:-dev}"
 
 echo
 echo "Final gate -- the organizer's own script, unmodified:"
-"$PY" -m odyssey official dispatch --shapes "$SHAPES" --case default -- --atol 0.001 --rtol 0.01
+"$PY" -m odyssey official dispatch --shapes "$SHAPES" --case center -- --atol 0.001 --rtol 0.01

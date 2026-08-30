@@ -120,7 +120,7 @@ python -m odyssey list                      # candidates and shape sets
 ./scripts/run_ladder.sh                     # the opponent, before writing anything
 python -m odyssey bench all --shapes dev    # sweep, recorded to runs/
 python -m odyssey calibrate --shapes dev    # build the dispatch table
-python -m odyssey official dispatch --case default -- --atol 0.001 --rtol 0.01
+python -m odyssey official dispatch --case center -- --atol 0.001 --rtol 0.01
 ```
 
 ## Agent workflow dependencies

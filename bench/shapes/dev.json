@@ -1,26 +1,27 @@
 {
-  "name": "dev8",
-  "description": "Eight representative cases used during development. Cheap enough to run after every candidate; broad enough that a win here is unlikely to be a fluke. Promote nothing on dev8 alone -- re-run bench/shapes/official.json before recording a headline number.",
+  "name": "dev",
+  "description": "The iteration set: nine cases anchored on the official grid's center point (B=64, S=128, d=128, H=4, ffn=128, L=4, causal -- every official shape is causal, so causal is the default here too). Five cases probe the grid's own extremes, four probe the axes the appendix table leaves to script flags (dtype, padding, scale). Cheap enough to run after every candidate; promote nothing on dev alone -- re-run bench/shapes/official.json before recording a headline number.",
   "defaults": {
-    "batch_size": 8,
+    "batch_size": 64,
     "seq_len": 128,
-    "d_model": 512,
-    "num_heads": 8,
-    "ffn_dim": 2048,
-    "num_layers": 6,
-    "causal": false,
+    "d_model": 128,
+    "num_heads": 4,
+    "ffn_dim": 128,
+    "num_layers": 4,
+    "causal": true,
     "dtype": "float32",
     "padding_ratio": 0.0,
     "input_scale": 1.0
   },
   "cases": [
-    {"name": "default",      "note": "The script's own defaults. 1024 tokens, ~19M params, ~90 kernel launches per forward. Launch-bound, not compute-bound."},
-    {"name": "default-bf16", "dtype": "bfloat16", "note": "Same shape, reduced precision. Checks that the tolerance budget survives bf16."},
-    {"name": "default-fp16", "dtype": "float16",  "note": "Same shape, fp16. Narrower dynamic range than bf16, wider mantissa."},
-    {"name": "causal",       "causal": true, "note": "Causal masking on. The baseline rebuilds the triangular mask once per layer."},
-    {"name": "padded",       "padding_ratio": 0.4, "note": "Padding on. Three masked_fill sites become live; a naive SDPA swap silently fails here."},
-    {"name": "long-seq",     "seq_len": 1024, "batch_size": 2, "note": "Attention becomes O(S^2)-dominant. Different bottleneck from the default."},
-    {"name": "wide-batch",   "batch_size": 64, "seq_len": 64, "note": "Same token count, more parallelism, shorter attention."},
-    {"name": "deep-wide",    "d_model": 1024, "ffn_dim": 4096, "num_layers": 12, "batch_size": 4, "note": "Compute-bound end of the grid. Where matmul quality starts to matter more than launch count."}
+    {"name": "center",        "note": "The official grid's center point. 8192 tokens, ~0.4M params, ffn = d_model. Launch-bound."},
+    {"name": "center-bf16",   "dtype": "bfloat16", "note": "dtype is a script flag, not a grid column. Checks the tolerance budget survives bf16 -- the case that separates fused-safe from fused-sdpa."},
+    {"name": "center-fp16",   "dtype": "float16", "note": "fp16: wider mantissa than bf16, narrower dynamic range."},
+    {"name": "center-padded", "padding_ratio": 0.4, "note": "padding_ratio is a script flag. Three output-masking sites become live; a naive SDPA swap silently fails here."},
+    {"name": "batch-1",       "batch_size": 1, "note": "The latency floor: 128 tokens, per-launch overhead is most of the wall clock."},
+    {"name": "batch-128",     "batch_size": 128, "note": "The large-batch end that still iterates quickly (batch-10000 lives in the official set only)."},
+    {"name": "wide-1024",     "d_model": 1024, "ffn_dim": 1024, "note": "head_dim = 256, the flash upper limit; the compute-heavy end of the width sweep."},
+    {"name": "heads-16",      "num_heads": 16, "note": "head_dim = 8, the fused-backend lower edge -- measure which backend actually serves it."},
+    {"name": "seq-1024",      "seq_len": 1024, "note": "Attention goes O(S^2)-dominant. The stress-100k regime's nearest cheap proxy."}
   ]
 }

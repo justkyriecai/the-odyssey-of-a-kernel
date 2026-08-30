@@ -7,40 +7,93 @@
       "candidate": "compiled-sdpa",
       "worst_speedup": 3.097,
       "cases": [
-        "batch-10000"
+        "batch-10000",
+        "batch-10000-pad"
+      ],
+      "margin": 0.05,
+      "rejected": {
+        "compiled-safe-ro": "did not run on ['batch-10000-pad']",
+        "flash-tf32": "did not run on ['batch-10000-pad']",
+        "fused-safe": "did not run on ['batch-10000-pad']",
+        "fused-sdpa": "did not run on ['batch-10000-pad']",
+        "graph-safe": "did not run on ['batch-10000-pad']",
+        "graph-sdpa": "did not run on ['batch-10000-pad']"
+      }
+    },
+    "b128_s128_d128_h4_f128_l4_causal_bfloat16": {
+      "candidate": "graph-safe",
+      "worst_speedup": 1.192,
+      "cases": [
+        "batch-128-bf16"
+      ],
+      "margin": 0.05,
+      "rejected": {}
+    },
+    "b128_s128_d128_h4_f128_l4_causal_float16": {
+      "candidate": "graph-safe",
+      "worst_speedup": 1.16,
+      "cases": [
+        "batch-128-fp16"
       ],
       "margin": 0.05,
       "rejected": {}
     },
     "b128_s128_d128_h4_f128_l4_causal_float32": {
-      "candidate": "compiled-safe-ro",
-      "worst_speedup": 2.147,
+      "candidate": "compiled-base-ro",
+      "worst_speedup": 2.37,
       "cases": [
-        "batch-128"
+        "batch-128",
+        "batch-128-pad"
       ],
       "margin": 0.05,
       "rejected": {
-        "fused-safe": "worst speedup 1.026x below 1+0.05",
-        "graph-safe": "worst speedup 1.038x below 1+0.05"
+        "compiled-safe": "did not run on ['batch-128-pad']",
+        "compiled-sdpa": "did not run on ['batch-128-pad']",
+        "compiled-sdpa-ro": "did not run on ['batch-128-pad']",
+        "flash-fp32": "did not run on ['batch-128-pad']",
+        "flash-tf32": "did not run on ['batch-128-pad']",
+        "fused-safe": "did not run on ['batch-128-pad']",
+        "fused-sdpa": "did not run on ['batch-128-pad']",
+        "graph-safe": "did not run on ['batch-128-pad']",
+        "graph-sdpa": "did not run on ['batch-128-pad']"
       }
     },
     "b16_s128_d128_h4_f128_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
-      "worst_speedup": 9.03,
+      "worst_speedup": 8.623,
       "cases": [
-        "batch-16"
+        "batch-16",
+        "batch-16-pad"
       ],
       "margin": 0.05,
-      "rejected": {}
+      "rejected": {
+        "compiled-sdpa": "did not run on ['batch-16-pad']",
+        "flash-tf32": "did not run on ['batch-16-pad']",
+        "fused-safe": "did not run on ['batch-16-pad']",
+        "fused-sdpa": "did not run on ['batch-16-pad']",
+        "graph-safe": "did not run on ['batch-16-pad']",
+        "graph-sdpa": "did not run on ['batch-16-pad']"
+      }
     },
     "b1_s128_d128_h4_f128_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
       "worst_speedup": 12.605,
       "cases": [
-        "batch-1"
+        "batch-1",
+        "batch-1-pad"
       ],
       "margin": 0.05,
-      "rejected": {}
+      "rejected": {
+        "compiled-safe": "did not run on ['batch-1-pad']",
+        "compiled-sdpa": "did not run on ['batch-1-pad']",
+        "compiled-sdpa-ro": "did not run on ['batch-1-pad']",
+        "flash-fp32": "did not run on ['batch-1-pad']",
+        "flash-tf32": "did not run on ['batch-1-pad']",
+        "fused-safe": "did not run on ['batch-1-pad']",
+        "fused-sdpa": "did not run on ['batch-1-pad']",
+        "graph-safe": "did not run on ['batch-1-pad']",
+        "graph-sdpa": "did not run on ['batch-1-pad']"
+      }
     },
     "b32_s1024_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
@@ -89,9 +142,35 @@
     },
     "b4_s128_d128_h4_f128_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
-      "worst_speedup": 11.997,
+      "worst_speedup": 11.203,
       "cases": [
-        "batch-4"
+        "batch-4",
+        "batch-4-pad"
+      ],
+      "margin": 0.05,
+      "rejected": {
+        "compiled-sdpa": "did not run on ['batch-4-pad']",
+        "flash-tf32": "did not run on ['batch-4-pad']",
+        "fused-safe": "did not run on ['batch-4-pad']",
+        "fused-sdpa": "did not run on ['batch-4-pad']",
+        "graph-safe": "did not run on ['batch-4-pad']",
+        "graph-sdpa": "did not run on ['batch-4-pad']"
+      }
+    },
+    "b64_s1024_d128_h4_f128_l4_causal_bfloat16": {
+      "candidate": "graph-safe",
+      "worst_speedup": 1.183,
+      "cases": [
+        "seq-1024-bf16"
+      ],
+      "margin": 0.05,
+      "rejected": {}
+    },
+    "b64_s1024_d128_h4_f128_l4_causal_float16": {
+      "candidate": "graph-safe",
+      "worst_speedup": 1.181,
+      "cases": [
+        "seq-1024-fp16"
       ],
       "margin": 0.05,
       "rejected": {}
@@ -100,55 +179,108 @@
       "candidate": "flash-tf32",
       "worst_speedup": 12.023,
       "cases": [
-        "seq-1024"
-      ],
-      "margin": 0.05,
-      "rejected": {}
-    },
-    "b64_s128_d1024_h4_f1024_l4_causal_float32": {
-      "candidate": "compiled-sdpa",
-      "worst_speedup": 1.235,
-      "cases": [
-        "wide-1024"
+        "seq-1024",
+        "seq-1024-pad"
       ],
       "margin": 0.05,
       "rejected": {
-        "flash-fp32": "worst speedup 0.419x below 1+0.05",
-        "flash-tf32": "worst speedup 1.037x below 1+0.05",
-        "fused-safe": "worst speedup 1.005x below 1+0.05",
-        "graph-safe": "worst speedup 0.997x below 1+0.05"
+        "compiled-safe": "did not run on ['seq-1024-pad']",
+        "compiled-safe-ro": "did not run on ['seq-1024-pad']",
+        "compiled-sdpa": "did not run on ['seq-1024-pad']",
+        "compiled-sdpa-ro": "did not run on ['seq-1024-pad']",
+        "flash-fp32": "did not run on ['seq-1024-pad']",
+        "fused-safe": "did not run on ['seq-1024-pad']",
+        "fused-sdpa": "did not run on ['seq-1024-pad']",
+        "graph-safe": "did not run on ['seq-1024-pad']",
+        "graph-sdpa": "did not run on ['seq-1024-pad']"
       }
     },
-    "b64_s128_d128_h16_f128_l4_causal_float32": {
-      "candidate": "compiled-safe-ro",
-      "worst_speedup": 3.467,
+    "b64_s128_d1024_h4_f1024_l4_causal_float32": {
+      "candidate": "compiled-base-ro",
+      "worst_speedup": 1.245,
       "cases": [
-        "heads-16"
+        "wide-1024",
+        "wide-1024-pad"
+      ],
+      "margin": 0.05,
+      "rejected": {
+        "compiled-safe": "did not run on ['wide-1024-pad']",
+        "compiled-safe-ro": "did not run on ['wide-1024-pad']",
+        "compiled-sdpa-ro": "did not run on ['wide-1024-pad']",
+        "flash-fp32": "did not run on ['wide-1024-pad']",
+        "flash-tf32": "did not run on ['wide-1024-pad']",
+        "fused-safe": "did not run on ['wide-1024-pad']",
+        "fused-sdpa": "did not run on ['wide-1024-pad']",
+        "graph-safe": "did not run on ['wide-1024-pad']",
+        "graph-sdpa": "did not run on ['wide-1024-pad']"
+      }
+    },
+    "b64_s128_d128_h16_f128_l4_causal_float16": {
+      "candidate": "graph-safe",
+      "worst_speedup": 1.051,
+      "cases": [
+        "heads-16-fp16"
       ],
       "margin": 0.05,
       "rejected": {}
+    },
+    "b64_s128_d128_h16_f128_l4_causal_float32": {
+      "candidate": "compiled-base-ro",
+      "worst_speedup": 3.672,
+      "cases": [
+        "heads-16",
+        "heads-16-pad"
+      ],
+      "margin": 0.05,
+      "rejected": {
+        "compiled-safe": "did not run on ['heads-16-pad']",
+        "compiled-sdpa": "did not run on ['heads-16-pad']",
+        "compiled-sdpa-ro": "did not run on ['heads-16-pad']",
+        "flash-fp32": "did not run on ['heads-16-pad']",
+        "flash-tf32": "did not run on ['heads-16-pad']",
+        "fused-safe": "did not run on ['heads-16-pad']",
+        "fused-sdpa": "did not run on ['heads-16-pad']",
+        "graph-safe": "did not run on ['heads-16-pad']",
+        "graph-sdpa": "did not run on ['heads-16-pad']"
+      }
     },
     "b64_s128_d128_h1_f128_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
       "worst_speedup": 4.791,
       "cases": [
-        "heads-1"
+        "heads-1",
+        "heads-1-pad"
       ],
       "margin": 0.05,
-      "rejected": {}
+      "rejected": {
+        "compiled-sdpa": "did not run on ['heads-1-pad']",
+        "flash-tf32": "did not run on ['heads-1-pad']",
+        "fused-safe": "did not run on ['heads-1-pad']",
+        "fused-sdpa": "did not run on ['heads-1-pad']",
+        "graph-safe": "did not run on ['heads-1-pad']",
+        "graph-sdpa": "did not run on ['heads-1-pad']"
+      }
     },
     "b64_s128_d128_h2_f128_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
-      "worst_speedup": 4.681,
+      "worst_speedup": 4.454,
       "cases": [
-        "heads-2"
+        "heads-2",
+        "heads-2-pad"
       ],
       "margin": 0.05,
-      "rejected": {}
+      "rejected": {
+        "compiled-sdpa": "did not run on ['heads-2-pad']",
+        "flash-tf32": "did not run on ['heads-2-pad']",
+        "fused-safe": "did not run on ['heads-2-pad']",
+        "fused-sdpa": "did not run on ['heads-2-pad']",
+        "graph-safe": "did not run on ['heads-2-pad']",
+        "graph-sdpa": "did not run on ['heads-2-pad']"
+      }
     },
     "b64_s128_d128_h4_f128_l4_causal_bfloat16": {
       "candidate": "graph-safe",
-      "worst_speedup": 2.573,
+      "worst_speedup": 2.709,
       "cases": [
         "center-bf16"
       ],
@@ -164,7 +296,7 @@
     },
     "b64_s128_d128_h4_f128_l4_causal_float16": {
       "candidate": "graph-safe",
-      "worst_speedup": 2.446,
+      "worst_speedup": 2.421,
       "cases": [
         "center-fp16"
       ],
@@ -183,31 +315,61 @@
       "worst_speedup": 3.898,
       "cases": [
         "center",
+        "center-pad",
         "center-padded"
       ],
       "margin": 0.05,
       "rejected": {
-        "flash-tf32": "did not run on ['center-padded']"
+        "compiled-base-ro": "did not run on ['center-padded']",
+        "compiled-safe": "did not run on ['center-pad']",
+        "compiled-sdpa": "did not run on ['center-pad']",
+        "compiled-sdpa-ro": "did not run on ['center-pad']",
+        "flash-fp32": "did not run on ['center-pad']",
+        "flash-tf32": "did not run on ['center-pad', 'center-padded']",
+        "fused-safe": "did not run on ['center-pad']",
+        "fused-sdpa": "did not run on ['center-pad']",
+        "graph-safe": "did not run on ['center-pad']",
+        "graph-sdpa": "did not run on ['center-pad']"
       }
     },
     "b64_s128_d32_h4_f32_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
       "worst_speedup": 6.59,
       "cases": [
-        "narrow-32"
+        "narrow-32",
+        "narrow-32-pad"
       ],
       "margin": 0.05,
-      "rejected": {}
+      "rejected": {
+        "compiled-sdpa": "did not run on ['narrow-32-pad']",
+        "flash-tf32": "did not run on ['narrow-32-pad']",
+        "fused-safe": "did not run on ['narrow-32-pad']",
+        "fused-sdpa": "did not run on ['narrow-32-pad']",
+        "graph-safe": "did not run on ['narrow-32-pad']",
+        "graph-sdpa": "did not run on ['narrow-32-pad']"
+      }
     },
     "b64_s32_d128_h4_f128_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
-      "worst_speedup": 9.961,
+      "worst_speedup": 9.309,
       "cases": [
-        "seq-32"
+        "seq-32",
+        "seq-32-pad"
       ],
       "margin": 0.05,
-      "rejected": {}
+      "rejected": {
+        "compiled-sdpa": "did not run on ['seq-32-pad']",
+        "flash-tf32": "did not run on ['seq-32-pad']",
+        "fused-safe": "did not run on ['seq-32-pad']",
+        "fused-sdpa": "did not run on ['seq-32-pad']",
+        "graph-safe": "did not run on ['seq-32-pad']",
+        "graph-sdpa": "did not run on ['seq-32-pad']"
+      }
     }
   },
-  "no_winner": {}
+  "no_winner": {
+    "b64_s128_d128_h16_f128_l4_causal_bfloat16": {
+      "graph-safe": "worst speedup 1.049x below 1+0.05"
+    }
+  }
 }

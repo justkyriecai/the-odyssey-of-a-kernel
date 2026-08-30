@@ -40,6 +40,7 @@ from typing import Any, Optional
 
 import torch
 import torch.nn.functional as F
+from torch.nn.attention import SDPBackend, sdpa_kernel
 
 from .v1_fused_attention import SDPA, FP32_SOFTMAX, fused_attention_class
 
@@ -126,9 +127,16 @@ def compiled_class(official: Any, attention_impl: str, mode: str) -> type:
                     probs = torch.softmax(scores.float(), dim=-1).to(dtype=q.dtype)
                     context = torch.matmul(probs, v)
                 else:
-                    context = F.scaled_dot_product_attention(
-                        q, k, v, attn_mask=keep, is_causal=is_causal, scale=scale
-                    )
+                    # Pinned, not trusted: the dispatcher's backend choice can
+                    # change across torch versions and with it the numerics the
+                    # calibration measured. fp32 with a mask selects
+                    # mem-efficient on this card; saying so makes the table's
+                    # verdicts portable. dynamo has native support for this
+                    # context manager (SDPAKernelVariable), so no graph break.
+                    with sdpa_kernel([SDPBackend.EFFICIENT_ATTENTION]):
+                        context = F.scaled_dot_product_attention(
+                            q, k, v, attn_mask=keep, is_causal=is_causal, scale=scale
+                        )
                 context = context.transpose(1, 2).reshape(batch, seq_len, d_model)
 
                 out_proj = layer.attention.out_proj

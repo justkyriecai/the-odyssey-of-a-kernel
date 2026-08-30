@@ -121,11 +121,6 @@ def dispatch_class(official: Any) -> type:
 
             from . import CANDIDATES  # noqa: PLC0415 - the package imports this module
 
-            if name not in CANDIDATES:
-                # A stale table (candidate renamed or removed since calibration)
-                # must degrade to the baseline path, not raise at serve time.
-                self._delegates[name] = self
-                return self
             module = CANDIDATES[name][1](official)(self.config)
             # Share this model's parameters by reference. The delegate's own
             # freshly-allocated layers are discarded here; that costs one CPU
@@ -143,6 +138,16 @@ def dispatch_class(official: Any) -> type:
             name = entry.get("candidate") if isinstance(entry, dict) else entry
             if name in NOT_DISPATCHABLE:
                 name = None
+            if name is not None:
+                from . import CANDIDATES  # noqa: PLC0415
+
+                # A stale table entry (candidate renamed or removed since
+                # calibration) resolves to the baseline path here, at choice
+                # time. The first fix for this lived at serve time and cached
+                # `self` as its own delegate -- which recurses through forward
+                # forever. Resolution is the only safe place to degrade.
+                if name not in CANDIDATES:
+                    name = None
             self._resolved[key] = name
             return name
 

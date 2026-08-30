@@ -52,6 +52,12 @@ where unspecified, choose the framing that best shows the approach's strengths.
   max-autotune-notf32: near-exact (1.4e-6) but never fastest; wide-1024 0.44x.
 
 ### Plan Evolution Log
+- R2-1 (round-1 review verdict: CONTINUE): P0 stale-name dispatch recursion fixed at
+  resolution time with a regression test (scripts/test_dispatch_fallback.py); SDPA
+  backend pinned (EFFICIENT_ATTENTION) in the compiled body per AC-4; the center
+  headline is restated at the reproducible value pending fresh-process runs (0.362
+  stable vs 0.337 single-run best; margin over the 0.368 opponent is ~1.7%, to be
+  re-measured n>=3); heads-16 removed from compiled-sdpa's claimed win set.
 - R1-1: D1-I3 re-scoped from the TF32-legalization experiment to compile-boundary
   repair. Justification: M0.2 already measured max-autotune-notf32 (near-exact but
   never fastest, 0.44x on wide-1024) -- the experiment's question is answered; the

@@ -92,9 +92,33 @@ for r in rows:
 PY
 ```
 
-| Case | Candidate | atol | max_abs | Spent | max_rel | Verdict |
-|---|---|---:|---:|---:|---:|:--:|
-| _fill from `runs/benchmark.csv`_ | | | | | | |
+Filled 2026-08-30 from the round-1/round-2 rows (official tolerance, eager
+reference only -- rows judged against a compiled reference are excluded, as in
+calibration -- latest row per candidate/case/dtype, worst case per
+candidate/dtype shown; the only row a budget claim may cite):
+
+| Candidate | dtype | Worst case | max_abs | Spent (of 0.002) | Verdict |
+|---|---|---|---:|---:|:--:|
+| `compiled-base-ro` | float32 | wide-1024 | 8.92e-04 | 0.45 | PASS |
+| `compiled-safe-ro` | bfloat16 | center-bf16 | 6.25e-02 | 31.25 | FAIL |
+| `compiled-safe-ro` | float16 | center-fp16 | 9.77e-03 | 4.88 | FAIL |
+| `compiled-safe-ro` | float32 | batch-10000 | 1.73e-03 | 0.87 | PASS |
+| `compiled-sdpa` | bfloat16 | center-bf16 | 6.25e-02 | 31.25 | FAIL |
+| `compiled-sdpa` | float16 | center-fp16 | 9.77e-03 | 4.88 | FAIL |
+| `compiled-sdpa` | float32 | narrow-32 | 1.32e-03 | 0.66 | PASS |
+| `flash-fp32` | float32 | wide-1024 | 1.22e-03 | 0.61 | PASS |
+| `flash-tf32` | float32 | batch-10000 | 2.13e-03 | 1.06 | PASS |
+| `graph-safe` | bfloat16 | center-bf16 | 0.00e+00 | 0.00 | PASS |
+| `graph-safe` | float16 | center-fp16 | 0.00e+00 | 0.00 | PASS |
+| `graph-safe` | float32 | batch-4 | 6.09e-04 | 0.30 | PASS |
+
+Notes: flash-tf32's worst absolute (1.06 of budget, batch-10000) is rescued by
+the OR rule's relative branch (the offending element's |ref| > 0.107) and that
+geometry is served by compiled-sdpa anyway. Every compiled variant's bf16/fp16
+row is the 0.0625/0.0098 rounding-point failure -- those lanes ship on
+graph-safe, whose spend is 0.00 by construction. input_scale beyond 1.0 remains
+unswept (the smoke `scaled` case is the only point) and the table says nothing
+about it.
 
 ## Two ways to read this table wrong
 

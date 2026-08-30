@@ -14,13 +14,49 @@
     "input_scale": 1.0
   },
   "cases": [
-    {"name": "plain"},
-    {"name": "causal", "causal": true},
-    {"name": "padded", "padding_ratio": 0.5},
-    {"name": "causal-padded", "causal": true, "padding_ratio": 0.5},
-    {"name": "bf16", "dtype": "bfloat16"},
-    {"name": "bf16-padded", "dtype": "bfloat16", "padding_ratio": 0.5},
-    {"name": "single-head", "num_heads": 1},
-    {"name": "long", "seq_len": 256, "batch_size": 1}
+    {
+      "name": "plain"
+    },
+    {
+      "name": "causal",
+      "causal": true
+    },
+    {
+      "name": "padded",
+      "padding_ratio": 0.5
+    },
+    {
+      "name": "causal-padded",
+      "causal": true,
+      "padding_ratio": 0.5
+    },
+    {
+      "name": "bf16",
+      "dtype": "bfloat16"
+    },
+    {
+      "name": "bf16-padded",
+      "dtype": "bfloat16",
+      "padding_ratio": 0.5
+    },
+    {
+      "name": "single-head",
+      "num_heads": 1
+    },
+    {
+      "name": "long",
+      "seq_len": 256,
+      "batch_size": 1
+    },
+    {
+      "name": "fp16",
+      "dtype": "float16",
+      "note": "fp16 has narrower dynamic range than bf16; the gate should cover both reduced-precision families."
+    },
+    {
+      "name": "scaled",
+      "input_scale": 4.0,
+      "note": "input_scale moves which term of the OR criterion binds (see docs/precision-budget.md); without a case it is a claim, not a check."
+    }
   ]
 }

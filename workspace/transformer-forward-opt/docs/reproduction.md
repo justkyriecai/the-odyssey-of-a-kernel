@@ -11,11 +11,13 @@ From the repository root, two levels up:
 git clone --recurse-submodules https://github.com/justkyriecai/the-odyssey-of-a-kernel.git
 cd the-odyssey-of-a-kernel
 
-# CPU-only (correctness work, laptops, CI)
+# Inherits the interpreter's torch when it already has one (a CUDA image), and
+# downloads one when it does not (a laptop, CI).
 ./scripts/setup_env.sh
 
-# With a specific CUDA wheel index
-TORCH_INDEX=https://download.pytorch.org/whl/cu124 ./scripts/setup_env.sh
+# A runtime the image does not carry, and a venv off the checkout's filesystem
+SYSTEM_TORCH=0 TORCH_INDEX=https://download.pytorch.org/whl/cu128 ./scripts/setup_env.sh
+VENV_DIR=/opt/odyssey-venv ./scripts/setup_env.sh
 
 # The agent workflow: humanize plugin, KernelWiki, ncu-report-skill
 ./scripts/setup_agent.sh
@@ -32,10 +34,13 @@ Then confirm the machine is actually ready:
 ```
 
 That script is a D0 gate, not a formality. It checks the driver, the torch CUDA
-build, **whether Nsight Compute is permitted to profile** -- which on many
-rented boxes it is not, because `NVreg_RestrictProfilingToAdminUsers` defaults
-to restricting it -- and ends by running this workspace's CPU smoke test.
-Discovering a denied profiler on day two costs a day.
+build, **which profilers the box permits** and ends by running this workspace's
+CPU smoke test. Profiling is two answers, not one: Nsight Compute needs the
+hardware performance counters, which many rented boxes withhold because
+`NVreg_RestrictProfilingToAdminUsers` defaults to restricting them, while
+Nsight Systems traces through CUPTI and usually still works. The gate reports
+both and only fails when neither is available. Discovering a denied profiler on
+day two costs a day; `docs/runpod.md` has what to do about it.
 
 ## The card
 

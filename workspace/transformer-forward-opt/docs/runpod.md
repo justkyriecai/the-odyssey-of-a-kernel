@@ -94,19 +94,28 @@ is the relationship between three different "CUDA versions" a pod shows you:
 | | What it is | Where to read it | Who chooses it |
 |---|---|---|---|
 | **Driver** | Host kernel module; the *highest* CUDA it can run | `nvidia-smi` header ("CUDA Version") | The host. Cannot be changed from a pod. |
-| **Runtime** | The CUDA libraries bundled inside the torch wheel | `python -c "import torch; print(torch.version.cuda)"` | You, via `TORCH_INDEX` in `setup_env.sh` |
+| **Runtime** | The CUDA libraries bundled inside the torch wheel | `python -c "import torch; print(torch.version.cuda)"` | The image, by default: `setup_env.sh` inherits its torch rather than downloading one, so the runtime matches the `nvcc` and Nsight beside it. `SYSTEM_TORCH=0` plus `TORCH_INDEX` overrides that. |
 | **Toolkit** | `nvcc` and Nsight in the container image | `nvcc --version` | You, via the pod template |
 
 1. **Driver ≥ runtime.** A driver runs any *older* runtime, never a newer one.
    The failure is `torch.cuda.is_available() == False` or "CUDA driver version
    is insufficient" -- and it appears on whichever pod happens to have an older
-   host, which matters on a network volume that moves between pods. So pin the
-   runtime explicitly rather than taking whatever PyPI's default wheel ships
-   that week, and filter every pod to hosts whose driver covers it:
+   host, which matters on a network volume that moves between pods. The runtime
+   therefore has to be a decision, never whatever PyPI's default wheel ships
+   that week. Taking the image's torch makes the template the decision -- it is
+   named in the image tag, it matches the `nvcc` and Nsight in the same image,
+   and it costs no download. Filter every pod to hosts whose driver covers it:
 
    ```bash
-   TORCH_INDEX=https://download.pytorch.org/whl/cu128 ./scripts/setup_env.sh   # runtime 12.8
+   ./scripts/setup_env.sh                      # inherits the image's torch
+   # runpod/pytorch:...-cu1281-torch280-...  -> runtime 12.8
    # then, in the deploy dialog: CUDA filter >= 12.8 (driver >= 570)
+   ```
+
+   To choose a runtime the image does not carry, say so and pay for the wheel:
+
+   ```bash
+   SYSTEM_TORCH=0 TORCH_INDEX=https://download.pytorch.org/whl/cu128 ./scripts/setup_env.sh
    ```
 
    Minimum drivers, for reading the filter: 12.4 → 550, 12.6 → 560,
@@ -142,8 +151,9 @@ bash /workspace/odyssey/workspace/transformer-forward-opt/infra/runpod/pod.sh
 ```
 
 `pod.sh` ends by running `scripts/check_gpu.sh`, which is the D0 gate: driver,
-torch CUDA build, **whether ncu may profile**, and the CPU smoke test. If it
-ends `READY`, continue in order -- opponent first, ceilings second, kernels
+torch CUDA build, **which profilers the pod actually permits** (counters and
+timelines are separate answers), and the CPU smoke test. If it ends `READY`,
+continue in order -- opponent first, ceilings second, kernels
 never before either:
 
 ```bash
@@ -154,29 +164,45 @@ cd /workspace/odyssey/workspace/transformer-forward-opt
 
 ## The NCU question -- settle it before booking serious hours
 
-Nsight Compute needs access to GPU performance counters
-(`CAP_SYS_ADMIN`, or `NVreg_RestrictProfilingToAdminUsers=0` on the host
-driver). **Containerized pods frequently do not have it**, and the failure is
-`ERR_NVGPUCTRPERM`, not a missing binary. `check_gpu.sh` probes exactly this;
-run it in the first ten minutes of the *first* pod, before committing to the
-provider for the week.
+Profiling is two capabilities, not one, and a pod commonly has the second
+without the first. `check_gpu.sh` probes both; run it in the first ten minutes
+of the *first* pod, before committing to the provider for the week.
 
-If `ncu` is missing but permission is plausible, install it inside the image
-(`apt-get update && apt-get install -y cuda-nsight-compute-12-x` matching the
-image's CUDA) and re-probe. If the probe still says denied:
+**Hardware counters (`ncu`)** need `CAP_SYS_ADMIN` in the container, or
+`NVreg_RestrictProfilingToAdminUsers=0` on the host driver. Containerized pods
+frequently have neither, and the failure is `ERR_NVGPUCTRPERM` -- a permission
+error at session start, not a missing binary and not a version mismatch. Both
+switches live outside the container: `/proc/driver/nvidia/params` is read-only
+(the parameter is set when the host loads the module), and a process cannot
+grant itself a capability. Being uid 0 does not help; the driver tests the
+capability, not the uid. **There is no in-container fix.** Measured on a RunPod
+Secure Cloud pod, August 2026: `RmProfilingAdminOnly: 1`, `CapEff` without bit
+21, `ERR_NVGPUCTRPERM`.
+
+**Kernel timelines (`nsys`)** go through CUPTI's activity API instead, which the
+counter restriction does not gate. On the same pod that refuses `ncu`, `nsys`
+records per-kernel time with instance counts and spread, every CUDA API call
+with `cudaLaunchKernel` totals, and the gaps between kernels. The CUDA images
+ship `ncu` but not `nsys`; `pod.sh` installs it (`cuda-nsight-systems-<major>-<minor>`
+matching the image's `nvcc`) onto the container disk, which is why it happens on
+every pod rather than once per volume.
+
+So when the probe says counters are denied:
 
 - **Plan A -- stay on RunPod, downgrade the evidence, not the discipline.**
-  `torch.profiler` works everywhere: per-kernel wall time, launch counts, and
-  the timeline that shows gaps between kernels. That is enough to answer the
-  first question of Phase 2 -- launch-bound, memory-bound, or compute-bound --
-  and enough for the "fewer kernels" narrative. What it cannot give is hardware
-  counters (stall reasons, DRAM bytes), which the measured-intensity roofline
-  and `ncu-report-skill` want.
-- **Plan B -- move profiling sessions to a VM provider.** A provider that hands
-  you a VM with root (Lambda, and some others) lets `ncu` run as root or lets
-  you relax the driver restriction. A few hours of profiling there, with the
-  candidates rsynced over, feeds the NCU evidence while the cheap 4090 hours
-  stay on RunPod.
+  `nsys` answers the question Phase 2 opens with -- launch-bound, memory-bound
+  or compute-bound -- and carries the "fewer kernels" narrative with launch
+  counts taken on the card. `torch.profiler` works everywhere and gives the same
+  picture per aten op. What neither gives is stall reasons, DRAM bytes and
+  achieved occupancy, which the measured-intensity roofline and
+  `ncu-report-skill` want. Denied counters are a downgrade, not a stop, and
+  `check_gpu.sh` reports READY when `nsys` works.
+- **Plan B -- move profiling sessions to a box that grants counters.** A VM
+  provider that hands you host root (Lambda, and some others) lets `ncu` run, as
+  would a pod started with `--cap-add=SYS_ADMIN` if the provider offers one --
+  worth asking their support before assuming. A few hours there, with the
+  candidates rsynced over, feeds the counter evidence while the cheap hours stay
+  on RunPod.
 
 Decide by probe, not by forum thread.
 

@@ -35,16 +35,52 @@ else:
     raise SystemExit(1)
 PY
 
-step "Nsight Compute"
+step "profilers"
+# Two independent capabilities, and a container commonly has the second without
+# the first. ncu reads hardware performance counters, which the driver gates
+# behind CAP_SYS_ADMIN (or NVreg_RestrictProfilingToAdminUsers=0 on the host).
+# nsys traces through CUPTI instead, so it is usually permitted where ncu is
+# refused, and it still answers the question Phase 2 opens with: per-kernel
+# time, launch counts, and the gaps between kernels. Only the measured-intensity
+# roofline and ncu-report-skill actually need the counters. Denied counters are
+# therefore a downgrade, not a stop -- docs/runpod.md, "The NCU question".
+WORKLOAD="import torch; torch.zeros(8, device='cuda').sum().item()"
+
+counters="not installed"
 if command -v ncu >/dev/null 2>&1; then
-  ncu --version | head -3
-  echo "-- permission probe (needs CAP_SYS_ADMIN or nvidia NVreg_RestrictProfilingToAdminUsers=0)"
-  ncu --metrics sm__cycles_elapsed.avg --target-processes all \
-      "$PY" -c "import torch; torch.zeros(8, device='cuda').sum().item()" >/dev/null 2>&1 \
-    && echo "   profiling permitted" \
-    || { echo "   PROFILING DENIED -- fix this on D0, not D2"; status=1; }
+  ncu --version | sed -n '3p'
+  if ncu --metrics sm__cycles_elapsed.avg --target-processes all \
+      "$PY" -c "$WORKLOAD" >/dev/null 2>&1; then
+    counters="permitted"
+  else
+    counters="DENIED (ERR_NVGPUCTRPERM)"
+  fi
+fi
+
+timeline="not installed"
+if command -v nsys >/dev/null 2>&1; then
+  nsys --version | tail -1
+  probe_dir="$(mktemp -d)"
+  if nsys profile --trace=cuda --sample=none --cpuctxsw=none --force-overwrite=true \
+      -o "$probe_dir/probe" "$PY" -c "$WORKLOAD" >/dev/null 2>&1 \
+     && [[ -s "$probe_dir/probe.nsys-rep" ]]; then
+    timeline="working"
+  else
+    timeline="DENIED"
+  fi
+  rm -rf "$probe_dir"
+fi
+
+echo "-- hardware counters (ncu): $counters"
+echo "-- kernel timeline (nsys):  $timeline"
+if [[ "$counters" == "permitted" ]]; then
+  echo "   full profiling evidence available"
+elif [[ "$timeline" == "working" ]]; then
+  echo "   counters unavailable; nsys covers launch-bound vs memory-bound vs compute-bound."
+  echo "   The measured-intensity roofline needs a box that grants them."
 else
-  echo "ncu not found. Install the CUDA toolkit or Nsight Compute."; status=1
+  echo "   NO PROFILER AT ALL -- fix this on D0, not D2. See docs/runpod.md."
+  status=1
 fi
 
 step "clock locking"

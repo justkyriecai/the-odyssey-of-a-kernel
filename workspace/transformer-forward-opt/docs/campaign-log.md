@@ -212,3 +212,19 @@ axis, where the official script now verifies the flash kernel to S=3072
 (7.96x, 90.9 ms vs 723 ms -- the "marginal" estimate measured solid; S=4096 at
 ~68 GB of reference scores stays arithmetic, not an attempt). Final dispatch
 validation: 13/13 dense + 3 padded spot-checks PASS, worst case 1.232x.
+
+## 2026-08-30 -- phase 3: the deliverables
+
+Ceilings measured on the card (`runs/ceilings.json`): TF32 GEMM 70.7 TFLOPS,
+IEEE fp32 30.3 (the flash trade's mechanism, now a measured pair), copy
+803 GB/s against a 960 spec -- the difference is why the rule says measure.
+Roofline generated from those roofs and the dispatch rows
+(`docs/assets/roofline.png`, `scripts/plot_roofline.py`): wide-1024's served
+point sits at 77% of the attainable GEMM roof; the launch-bound group's gap to
+the roof is launch overhead, not bandwidth; intensity is analytic and the plot
+says so (byte counters denied). README's status section now carries the final
+table; `docs/tech-report.md` drafts the submission narrative; the skill
+ablation and second kernel are scaffolded as protocol
+(`runs/ablation/README.md`) -- they need fresh sessions, and this session
+cannot be its own control group. demo.sh spot-checked: dispatch on center,
+4.07x, PASS, exit 0.

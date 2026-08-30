@@ -12,26 +12,30 @@ Paths below are relative to this directory. Commands assume the repository's
 
 ## Status
 
-Framework in place; the optimization campaign has not been run on a GPU.
-Nothing here reports a GPU speedup yet. What does work, end to end, on CPU
-today (`./scripts/smoke.sh`; timings move between runs, the error columns do
-not):
+Campaign complete through two RLCR rounds on an RTX 6000 Ada (sm_89, driver
+580.126.20, torch 2.8.0+cu128). Every number below is the organizer's script at
+the official tolerance (`--atol 0.002 --rtol 0.02`), median latency, recorded
+in `runs/benchmark.csv`; `runs/dispatch_table.json` routes each geometry to the
+candidate that won it under the worst-case admission rule.
+
+Dispatch validation, official grid (eager baseline denominator):
 
 ```
-candidate    case           verdict  speedup    max_abs
-fused-safe   plain          PASS      1.096x          0
-fused-safe   bf16           PASS      1.411x          0
-fused-sdpa   plain          PASS      1.451x    7.2e-07
-fused-sdpa   bf16           FAIL          --    0.03125   exit 2
-dispatch     bf16           PASS      0.991x          0   no table yet: baseline path
+batch-1   12.3x   seq-1024  11.8x   batch-10000  3.1x   center     3.9x
+seq-32     9.0x   batch-16   8.3x   narrow-32    6.7x   heads-1    4.7x
+heads-2    4.4x   heads-16   3.5x   batch-128    2.3x   wide-1024  1.2x
 ```
 
-That `FAIL` is the workflow working. `scaled_dot_product_attention` does not
-reproduce the baseline's fp32 softmax on every backend; in bf16 the drift
-accumulates across the residual layers and clears `atol`. Calibration will see
-it, decline to admit `fused-sdpa` for bf16 geometries, and route those shapes to
-the variant whose error is zero by construction. Two candidates, one
-measurement, no guessing.
+Worst case 1.23x -- never slower than the baseline anywhere, and never behind
+the strongest *numerically admissible* `torch.compile` configuration of the
+baseline on any measured lane (the plain `max-autotune` baseline fails the
+official tolerance itself: max_abs 0.0053 fp32, 0.0625 bf16). Shape #14
+(S=100000), which the script's own reference cannot run on any hardware, is
+served at 25.5 s with an off-script chunked comparison recording 0 bad
+elements of 3.28e9 -- labeled off-script, never claimed as an official pass.
+bf16/fp16 lanes ship the bit-exact graph-captured path (max_abs = 0).
+
+The full narrative with every measurement's provenance: `docs/campaign-log.md`.
 
 ## Contents
 

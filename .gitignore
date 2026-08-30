@@ -23,6 +23,7 @@ uv.lock
 # Editors / OS
 .DS_Store
 .claude/
+.mcp.json
 .codex/
 .idea/
 .vscode/

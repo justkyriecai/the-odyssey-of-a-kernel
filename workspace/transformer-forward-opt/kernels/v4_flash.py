@@ -57,6 +57,7 @@ if HAVE_TRITON:
         HEADS: tl.constexpr,
         HEAD_DIM: tl.constexpr,
         IS_CAUSAL: tl.constexpr,
+        ALLOW_TF32: tl.constexpr,
         BLOCK_M: tl.constexpr,
         BLOCK_N: tl.constexpr,
     ):
@@ -97,7 +98,7 @@ if HAVE_TRITON:
                 other=0.0,
             ).to(tl.float32)
 
-            scores = tl.dot(q, tl.trans(k), allow_tf32=False) * scale
+            scores = tl.dot(q, tl.trans(k), allow_tf32=ALLOW_TF32) * scale
 
             keep = offs_n[None, :] < length
             if IS_CAUSAL:
@@ -120,7 +121,7 @@ if HAVE_TRITON:
                 mask=offs_n[:, None] < seq_len,
                 other=0.0,
             ).to(tl.float32)
-            acc += tl.dot(p, v, allow_tf32=False)
+            acc += tl.dot(p, v, allow_tf32=ALLOW_TF32)
             m_i = m_new
 
         # Rows with no visible key (an invalid query row of a padded batch)
@@ -144,6 +145,7 @@ def flash_attention_fp32(
     *,
     causal: bool,
     scale: float,
+    allow_tf32: bool = False,
     block_m: Optional[int] = None,
     block_n: Optional[int] = None,
     num_warps: int = 4,
@@ -174,6 +176,7 @@ def flash_attention_fp32(
         out.stride(0), out.stride(1), out.stride(2),
         seq_len, scale,
         HEADS=heads, HEAD_DIM=head_dim, IS_CAUSAL=causal,
+        ALLOW_TF32=allow_tf32,
         BLOCK_M=block_m, BLOCK_N=block_n,
         num_warps=num_warps, num_stages=num_stages,
     )
@@ -181,10 +184,11 @@ def flash_attention_fp32(
 
 
 @functools.lru_cache(maxsize=None)
-def flash_class(official: Any) -> type:
+def flash_class(official: Any, allow_tf32: bool = False) -> type:
     base = fused_attention_class(official, FP32_SOFTMAX)
 
     class FlashFP32Transformer(base):
+        ALLOW_TF32 = allow_tf32
         def forward(
             self, x: torch.Tensor, valid_token_mask: Optional[torch.Tensor] = None
         ) -> torch.Tensor:
@@ -201,6 +205,21 @@ def flash_class(official: Any) -> type:
             if head_dim < 16:
                 # tl.dot needs >=16 per dimension; narrow heads take the eager path.
                 return super().forward(x, valid_token_mask)
+
+            # Every op in this model is independent across batch items, so a
+            # working set that cannot fit -- the stress shape's QKV alone is
+            # 38 GB at B=32 -- is served by slicing the batch and running the
+            # same forward per slice. Bit-identical to the unsliced pass; the
+            # slice size keeps the per-slice QKV near 3 GB.
+            qkv_bytes = batch * seq_len * 3 * d_model * x.element_size()
+            if batch > 1 and qkv_bytes > 6e9:
+                group = max(1, int(3e9 // (seq_len * 3 * d_model * x.element_size())))
+                outs = []
+                for start in range(0, batch, group):
+                    sl = slice(start, start + group)
+                    mask_sl = None if valid_token_mask is None else valid_token_mask[sl]
+                    outs.append(self.forward(x[sl], mask_sl))
+                return torch.cat(outs, dim=0)
 
             if valid_token_mask is None:
                 lengths = torch.full(
@@ -233,7 +252,8 @@ def flash_class(official: Any) -> type:
                 )
 
                 context = flash_attention_fp32(
-                    q, k, v, lengths, causal=causal, scale=scale
+                    q, k, v, lengths,
+                    causal=causal, scale=scale, allow_tf32=self.ALLOW_TF32,
                 )
                 context = context.transpose(1, 2).reshape(batch, seq_len, d_model)
 
@@ -257,7 +277,18 @@ def flash_class(official: Any) -> type:
     return FlashFP32Transformer
 
 
+def _build_tf32(official: Any) -> type:
+    return flash_class(official, True)
+
+
 CANDIDATES = {
+    "flash-tf32": (
+        "the same Triton online-softmax attention with TF32 tensor-core dots -- a "
+        "speed/accuracy trade named as its own candidate so calibration measures "
+        "whether its drift survives the official tolerance per geometry. The "
+        "softmax recurrence itself stays fp32; only the two dots change.",
+        _build_tf32,
+    ),
     "flash-fp32": (
         "Triton online-softmax causal attention, IEEE fp32 accumulation, padding "
         "via per-row lengths -- O(S*d) memory, never materializes S x S. fp32 CUDA "

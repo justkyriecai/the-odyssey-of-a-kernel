@@ -17,6 +17,10 @@ export UV_TOOL_BIN_DIR="$TOOLS/bin"
 # npm: the cache on the volume; no NPM_CONFIG_PREFIX, which breaks nvm.
 export NPM_CONFIG_CACHE="$TOOLS/npm-cache"
 
+# gh: the config directory holds the auth token, so it belongs on the volume --
+# otherwise every new pod starts logged out. $TOOLS/bin/gh is the binary.
+export GH_CONFIG_DIR="$TOOLS/gh-config"
+
 # The volume refuses chown and GNU tar as root restores ownership by default, so a
 # later `nvm install` would fail the way the first one does without this.
 export TAR_OPTIONS="--no-same-owner"

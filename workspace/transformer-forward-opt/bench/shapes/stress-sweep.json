@@ -14,10 +14,32 @@
     "input_scale": 1.0
   },
   "cases": [
-    {"name": "stress-s512",  "seq_len": 512},
-    {"name": "stress-s1024"},
-    {"name": "stress-s1024-padded", "padding_ratio": 0.4, "note": "the padded lane of the stress geometry; the flash kernel's per-row lengths must survive it"},
-    {"name": "stress-s2048", "seq_len": 2048, "note": "expected solid: ~17 GB of reference scores"},
-    {"name": "stress-s2816", "seq_len": 2816, "note": "expected marginal: ~32 GB of reference scores plus activations"}
+    {
+      "name": "stress-s512",
+      "seq_len": 512
+    },
+    {
+      "name": "stress-s1024"
+    },
+    {
+      "name": "stress-s1024-padded",
+      "padding_ratio": 0.4,
+      "note": "the padded lane of the stress geometry; the flash kernel's per-row lengths must survive it"
+    },
+    {
+      "name": "stress-s2048",
+      "seq_len": 2048,
+      "note": "expected solid: ~17 GB of reference scores"
+    },
+    {
+      "name": "stress-s2816",
+      "seq_len": 2816,
+      "note": "expected marginal: ~32 GB of reference scores plus activations"
+    },
+    {
+      "name": "stress-s3072",
+      "seq_len": 3072,
+      "note": "the ceiling probe: ~38 GB of reference scores plus activations on a 48 GB card; expected marginal-to-OOM, and either outcome is the recorded evidence for where the official script stops"
+    }
   ]
 }

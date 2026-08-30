@@ -172,3 +172,43 @@ sdpa/compiled failure named in the rejection column. flash-tf32 at wide-1024
 is rejected at 1.037x -- below the 1.05 margin -- which is the admission rule
 doing its job. The insurance direction (manual multi-slot graphs) never
 activated: cudagraph trees held across in-process official sweeps.
+
+## 2026-08-30 -- round 2: the review lands, the table closes every gap
+
+**Round-1 adversarial review: CONTINUE, one P0.** The stale-table fallback
+added in round 1 cached the dispatcher as its own delegate and recursed through
+forward -- reproduced live by the reviewer. Degradation now happens at
+resolution time (`_choose` validates against the live registry) and
+`scripts/test_dispatch_fallback.py` holds the regression: a bogus table must
+produce baseline output byte-for-byte. The review also caught an unpinned SDPA
+call (now pinned to mem-efficient inside the compiled region; re-measured
+byte-identical numerics, 3.12x at batch-10000), a cherry-picked center
+headline, and a missing fidelity-table artifact (now filled into
+docs/precision-budget.md from the CSV, compile-baseline rows excluded exactly
+as calibration excludes them).
+
+**The opponent as a candidate.** Three geometries still ran faster under the
+compiled baseline than under any restructured body -- so `compiled-base-ro`
+compiles the baseline's own forward inside the candidate, and dispatch now
+serves the opponent's exact program where the opponent wins: batch-128 0.662 ms
+(2.37x worst-case), heads-16 0.808 (3.67x), wide-1024 (1.245x worst-case).
+"Never slower than the fastest admissible compiled configuration" is now a
+table property, not a search outcome.
+
+**Variant lanes measured, not argued.** A padded case for every runnable
+official geometry (distinct case names, so calibration's latest-row-wins adds
+them to the group instead of overwriting the dense row) plus bf16/fp16 lanes on
+a representative spread: 31 rows, all PASS. The padded-and-dense admission
+guarantee is a measurement now. One honest casualty: graph-safe's heads-16-bf16
+worst case is 1.049x -- below the 1.05 margin -- so that lane falls back to the
+baseline path rather than shipping a 4.9% win the rule cannot vouch for.
+
+**The margins, restated at reproducible values.** center: 0.362 ms across three
+fresh processes (spread 0.0012) vs the opponent's 0.368 -- parity to a +1.7%
+edge, at the plan's own noise line; the decisive edges are batch-1 (0.113 vs
+0.133, +18% and 12.3x over eager), seq-1024 (6.50 vs 24.77, 3.8x), batch-10000
+(104.7 vs eager 326.7; the opponent was never measured there), and the stress
+axis, where the official script now verifies the flash kernel to S=3072
+(7.96x, 90.9 ms vs 723 ms -- the "marginal" estimate measured solid; S=4096 at
+~68 GB of reference scores stays arithmetic, not an attempt). Final dispatch
+validation: 13/13 dense + 3 padded spot-checks PASS, worst case 1.232x.

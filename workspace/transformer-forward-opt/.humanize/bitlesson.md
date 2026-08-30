@@ -11,3 +11,9 @@
 - BL-3: torch tensor CPU work on tiny shapes: OMP threads = cores (192) makes
   barriers dominate (1794ms vs 0.47ms single-thread). Pin OMP/MKL threads in
   CPU gates.
+- BL-4: Everything outside a compiled/captured region is paid per call; move
+  mask and constant construction inside the graph and keep masks in decomposed
+  broadcast form rather than materialized combinations.
+- BL-5: A fallback that returns into the same code path is a recursion, not a
+  fallback. Degrade at resolution time (validate names against the live
+  registry when choosing), never at serve time.

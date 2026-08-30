@@ -39,10 +39,10 @@ where unspecified, choose the framing that best shows the approach's strengths.
 - [ ] task8 D1-I5 per-dtype fidelity table
 - [x] task9: compiled-sdpa official grid 13/13 PASS; wins batch-10000 (3.10x) + wide-1024 (1.24x)
 - [x] task10 D4 flash I1+I2: kernel with per-row lengths handles causal+padding, IEEE fp32 dots; CPU fallback smoke 10/10; first GPU run RUNNING
-- [~] task11: stress sweep done (correct to S=2816); 100k latency 25.5s recorded; chunked comparison rerun in flight
+- [x] task11: stress sweep correct to S=2816; #14 OFF-SCRIPT latency 25.52s + comparison 0 bad of 3.28e9 (n013/n014)
 - [ ] task12 D4 I5 sm_89 tuning
-- [~] task13: table calibrated (every geometry served); dispatch official validation pending GPU
-- [ ] task14 campaign log + profile reports  (analyze tag -> adversarial subagent review)
+- [x] task13: table calibrated; dispatch validation 13/13 PASS, worst 1.243x, never slower anywhere
+- [x] task14: campaign log 6 entries; profiles 00-regime-anatomy + 01-round1; round-1 summary written; adversarial round review = the analyze step, launching
 
 ### Completed Items
 - task1 (M0.2b): opponent = reduce-overhead. fp32: center 0.368ms, batch-1 0.133,

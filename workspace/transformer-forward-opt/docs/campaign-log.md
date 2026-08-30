@@ -158,7 +158,10 @@ orchestrator reproduces the unmodified script EXACTLY at S=2048 (max diff 0),
 then extrapolates: at S=100000 the batch-sliced flash-tf32 forward runs in
 25.48 s median (p90 25.66, n=3, peak 36.8 GiB) -- a latency, labeled
 OFF-SCRIPT, for a shape whose reference OOMs in the script's own accuracy
-phase; the off-script element-wise comparison runs on host memory.
+phase; the off-script element-wise comparison runs on host memory. Verdict:
+max_abs 0.00110, **zero bad elements out of 3,276,800,000**, judged by the
+script's own compare_outputs at the official tolerance -- stated as an
+off-script agreement, never as an official pass.
 
 **The table (runs/dispatch_table.json).** Calibration over 200+ rows at the
 official tolerance admits per geometry on worst-case speedup: compiled-safe-ro

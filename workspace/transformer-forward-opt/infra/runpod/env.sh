@@ -17,6 +17,10 @@ export UV_TOOL_BIN_DIR="$TOOLS/bin"
 # npm: the cache on the volume; no NPM_CONFIG_PREFIX, which breaks nvm.
 export NPM_CONFIG_CACHE="$TOOLS/npm-cache"
 
+# The volume refuses chown and GNU tar as root restores ownership by default, so a
+# later `nvm install` would fail the way the first one does without this.
+export TAR_OPTIONS="--no-same-owner"
+
 # node: found by directory, never by a pinned minor version. nvm installs
 # "the latest 24.x" and a hard-coded v24.19.0 breaks silently the next time
 # bootstrap installs 24.20.0. nvm.sh itself is not sourced here -- it is over a

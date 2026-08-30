@@ -54,6 +54,12 @@ export UV_TOOL_BIN_DIR="$TOOLS/bin"
 export NPM_CONFIG_CACHE="$TOOLS/npm-cache"
 unset NPM_CONFIG_PREFIX PREFIX 2>/dev/null || true
 
+# The volume refuses chown, and GNU tar as root restores ownership by default:
+# nvm's node tarball then errors on every file it extracts and leaves no version
+# directory behind, which surfaces later as "node did not enter PATH". TAR_OPTIONS
+# is read by every tar nvm invokes.
+export TAR_OPTIONS="--no-same-owner"
+
 mkdir -p "$TOOLS"/{bin,nvm,uv,uv-cache,uv-python,uv-tools,npm-cache,.claude}
 [[ -s "$TOOLS/.claude.json" ]] || echo '{}' > "$TOOLS/.claude.json"
 

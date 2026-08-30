@@ -17,3 +17,6 @@
 - BL-5: A fallback that returns into the same code path is a recursion, not a
   fallback. Degrade at resolution time (validate names against the live
   registry when choosing), never at serve time.
+- BL-6: reshape on a non-contiguous view copies silently -- a kernel that
+  already takes strides should take them in the tensor's native rank. The
+  flash wrapper's 3D reshape was three hidden q/k/v copies per layer.

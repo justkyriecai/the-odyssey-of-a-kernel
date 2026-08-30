@@ -138,6 +138,7 @@ def fused_attention_class(official: Any, attention_impl: str = FP32_SOFTMAX) -> 
             k: torch.Tensor,
             v: torch.Tensor,
             keep: Optional[torch.Tensor],
+            blocked: Optional[torch.Tensor],
             is_causal: bool,
             scale: float,
         ) -> torch.Tensor:
@@ -146,16 +147,13 @@ def fused_attention_class(official: Any, attention_impl: str = FP32_SOFTMAX) -> 
                     q, k, v, attn_mask=keep, is_causal=is_causal, scale=scale
                 )
 
-            # Baseline arithmetic, op for op.
+            # Baseline arithmetic, op for op. `blocked` (True = mask out) is
+            # hoisted by the caller: inverting `keep` here cost one fresh
+            # [B,1,S,S] bool allocation per LAYER, and inside a captured CUDA
+            # graph those were replayed nodes doing nothing new.
             scores = torch.matmul(q, k.transpose(-2, -1)) * scale
-            if is_causal:
-                seq_len = q.shape[-2]
-                blocked = torch.ones(
-                    (seq_len, seq_len), dtype=torch.bool, device=q.device
-                ).triu(diagonal=1)
+            if blocked is not None:
                 scores = scores.masked_fill(blocked, float("-inf"))
-            elif keep is not None:
-                scores = scores.masked_fill(~keep, float("-inf"))
             probs = torch.softmax(scores.float(), dim=-1).to(dtype=q.dtype)
             return torch.matmul(probs, v)
 
@@ -172,6 +170,17 @@ def fused_attention_class(official: Any, attention_impl: str = FP32_SOFTMAX) -> 
             packed = self._fused_qkv(x)
             keep, is_causal = self._keep_mask(x, valid_token_mask)
             drop = None if valid_token_mask is None else ~valid_token_mask[..., None]
+            if self.ATTENTION_IMPL == SDPA:
+                blocked = None
+            elif keep is not None:
+                blocked = ~keep
+            elif is_causal:
+                seq_len_ = x.shape[1]
+                blocked = torch.ones(
+                    (seq_len_, seq_len_), dtype=torch.bool, device=x.device
+                ).triu(diagonal=1)
+            else:
+                blocked = None
 
             for index, layer in enumerate(self.layers):
                 qkv_weight, qkv_bias = packed[index]
@@ -185,7 +194,7 @@ def fused_attention_class(official: Any, attention_impl: str = FP32_SOFTMAX) -> 
                     .unbind(0)
                 )
 
-                context = self._attend(q, k, v, keep, is_causal, scale)
+                context = self._attend(q, k, v, keep, blocked, is_causal, scale)
                 context = context.transpose(1, 2).reshape(batch, seq_len, d_model)
 
                 out_proj = layer.attention.out_proj

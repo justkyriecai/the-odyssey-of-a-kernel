@@ -49,10 +49,10 @@ if HAVE_TRITON:
     @triton.jit
     def _flash_fwd(
         q_ptr, k_ptr, v_ptr, o_ptr, lengths_ptr,
-        stride_qz, stride_qm, stride_qd,
-        stride_kz, stride_kn, stride_kd,
-        stride_vz, stride_vn, stride_vd,
-        stride_oz, stride_om, stride_od,
+        stride_qb, stride_qh, stride_qm, stride_qd,
+        stride_kb, stride_kh, stride_kn, stride_kd,
+        stride_vb, stride_vh, stride_vn, stride_vd,
+        stride_ob, stride_oh, stride_om, stride_od,
         seq_len, scale,
         HEADS: tl.constexpr,
         HEAD_DIM: tl.constexpr,
@@ -64,13 +64,14 @@ if HAVE_TRITON:
         pid_m = tl.program_id(0)
         pid_z = tl.program_id(1)  # fused batch * heads index
         batch = pid_z // HEADS
+        head = pid_z % HEADS
 
         length = tl.load(lengths_ptr + batch)
 
         offs_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)
         offs_d = tl.arange(0, HEAD_DIM)
 
-        q_base = q_ptr + pid_z * stride_qz
+        q_base = q_ptr + batch * stride_qb + head * stride_qh
         q = tl.load(
             q_base + offs_m[:, None] * stride_qm + offs_d[None, :] * stride_qd,
             mask=offs_m[:, None] < seq_len,
@@ -91,7 +92,7 @@ if HAVE_TRITON:
         for start_n in range(0, hi, BLOCK_N):
             offs_n = start_n + tl.arange(0, BLOCK_N)
 
-            k_base = k_ptr + pid_z * stride_kz
+            k_base = k_ptr + batch * stride_kb + head * stride_kh
             k = tl.load(
                 k_base + offs_n[:, None] * stride_kn + offs_d[None, :] * stride_kd,
                 mask=offs_n[:, None] < seq_len,
@@ -115,7 +116,7 @@ if HAVE_TRITON:
             l_i = l_i * rescale + tl.sum(p, axis=1)
             acc = acc * rescale[:, None]
 
-            v_base = v_ptr + pid_z * stride_vz
+            v_base = v_ptr + batch * stride_vb + head * stride_vh
             v = tl.load(
                 v_base + offs_n[:, None] * stride_vn + offs_d[None, :] * stride_vd,
                 mask=offs_n[:, None] < seq_len,
@@ -129,7 +130,7 @@ if HAVE_TRITON:
         denom = tl.where(l_i == 0.0, 1.0, l_i)
         out = acc / denom[:, None]
 
-        o_base = o_ptr + pid_z * stride_oz
+        o_base = o_ptr + batch * stride_ob + head * stride_oh
         tl.store(
             o_base + offs_m[:, None] * stride_om + offs_d[None, :] * stride_od,
             out,
@@ -162,25 +163,25 @@ def flash_attention_fp32(
         block_n = 32 if head_dim >= 128 else 64
     if num_stages is None:
         num_stages = 1 if head_dim >= 128 else 2
-    q3 = q.reshape(batch * heads, seq_len, head_dim)
-    k3 = k.reshape(batch * heads, seq_len, head_dim)
-    v3 = v.reshape(batch * heads, seq_len, head_dim)
-    out = torch.empty_like(q3, memory_format=torch.contiguous_format)
+    # 4D views pass through untouched: the first cut reshaped to 3D, and on
+    # the packed-QKV layout that reshape silently COPIED q, k and v -- three
+    # extra tensor copies per layer. The kernel indexes (batch, head) itself.
+    out = torch.empty((batch, heads, seq_len, head_dim), device=q.device, dtype=q.dtype)
 
     grid = (triton.cdiv(seq_len, block_m), batch * heads)
     _flash_fwd[grid](
-        q3, k3, v3, out, lengths,
-        q3.stride(0), q3.stride(1), q3.stride(2),
-        k3.stride(0), k3.stride(1), k3.stride(2),
-        v3.stride(0), v3.stride(1), v3.stride(2),
-        out.stride(0), out.stride(1), out.stride(2),
+        q, k, v, out, lengths,
+        q.stride(0), q.stride(1), q.stride(2), q.stride(3),
+        k.stride(0), k.stride(1), k.stride(2), k.stride(3),
+        v.stride(0), v.stride(1), v.stride(2), v.stride(3),
+        out.stride(0), out.stride(1), out.stride(2), out.stride(3),
         seq_len, scale,
         HEADS=heads, HEAD_DIM=head_dim, IS_CAUSAL=causal,
         ALLOW_TF32=allow_tf32,
         BLOCK_M=block_m, BLOCK_N=block_n,
         num_warps=num_warps, num_stages=num_stages,
     )
-    return out.reshape(batch, heads, seq_len, head_dim)
+    return out
 
 
 @functools.lru_cache(maxsize=None)

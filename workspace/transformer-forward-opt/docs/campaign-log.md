@@ -228,3 +228,26 @@ ablation and second kernel are scaffolded as protocol
 (`runs/ablation/README.md`) -- they need fresh sessions, and this session
 cannot be its own control group. demo.sh spot-checked: dispatch on center,
 4.07x, PASS, exit 0.
+
+## 2026-08-30 -- round 3: four quick iterations, light review
+
+Per the user's directive the review is a self-audit, and the iteration count is
+the point. Four swings, one GPU batch, 148 seconds of measurement:
+
+1. **flash 4D strides.** The wrapper's 3D reshape silently copied q/k/v (three
+   copies per layer -- the kernel already took strides, just in the wrong
+   rank). seq-1024 6.50 -> 5.59 ms (14.0x eager; 13.4x through dispatch),
+   stress-s2816 80.3 -> 77.1 ms; padded lanes re-verified after the change
+   (14.2x / 4.26x) -- the one gap the self-audit caught.
+2. **Hoisted mask inversion in the fused body.** `~keep` was a fresh [B,1,S,S]
+   bool per layer, replayed as dead nodes inside captured graphs. heads-16-bf16
+   crosses the admission margin (1.049 -> 1.083x) and its lane is served for
+   the first time (dispatch 1.075x, max_abs 0); heads-16-fp16 at 1.027x stays
+   honestly on the baseline fallback.
+3. **Tile probe, null result recorded.** Six configs on the seq-1024 attention
+   geometry: the default 64x64x4w tile is within 2.4% of the best probe --
+   below the noise line, default confirmed, nothing changed.
+4. **input_scale axis, opened.** 4.0 and 0.25 on served winners: all PASS.
+   The interesting row: scale 0.25 pushes center's spend to 0.80 of the
+   absolute budget -- the precision doc's warning that budgets do not transfer
+   across scales, now with a number on it.

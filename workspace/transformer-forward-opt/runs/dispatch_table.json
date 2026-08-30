@@ -5,7 +5,7 @@
   "entries": {
     "b10000_s128_d128_h4_f128_l4_causal_float32": {
       "candidate": "compiled-sdpa",
-      "worst_speedup": 3.097,
+      "worst_speedup": 3.12,
       "cases": [
         "batch-10000",
         "batch-10000-pad"
@@ -97,7 +97,7 @@
     },
     "b32_s1024_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 4.005,
+      "worst_speedup": 4.109,
       "cases": [
         "stress-s1024",
         "stress-s1024-padded"
@@ -120,7 +120,7 @@
     },
     "b32_s2816_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 7.61,
+      "worst_speedup": 7.93,
       "cases": [
         "stress-s2816"
       ],
@@ -128,6 +128,15 @@
       "rejected": {
         "flash-fp32": "worst speedup 0.571x below 1+0.05"
       }
+    },
+    "b32_s3072_d1024_h16_f1024_l2_causal_float32": {
+      "candidate": "flash-tf32",
+      "worst_speedup": 7.956,
+      "cases": [
+        "stress-s3072"
+      ],
+      "margin": 0.05,
+      "rejected": {}
     },
     "b32_s512_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
@@ -177,7 +186,7 @@
     },
     "b64_s1024_d128_h4_f128_l4_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 12.023,
+      "worst_speedup": 12.424,
       "cases": [
         "seq-1024",
         "seq-1024-pad"
@@ -215,11 +224,11 @@
         "graph-sdpa": "did not run on ['wide-1024-pad']"
       }
     },
-    "b64_s128_d128_h16_f128_l4_causal_float16": {
+    "b64_s128_d128_h16_f128_l4_causal_bfloat16": {
       "candidate": "graph-safe",
-      "worst_speedup": 1.051,
+      "worst_speedup": 1.083,
       "cases": [
-        "heads-16-fp16"
+        "heads-16-bf16"
       ],
       "margin": 0.05,
       "rejected": {}
@@ -280,7 +289,7 @@
     },
     "b64_s128_d128_h4_f128_l4_causal_bfloat16": {
       "candidate": "graph-safe",
-      "worst_speedup": 2.709,
+      "worst_speedup": 2.622,
       "cases": [
         "center-bf16"
       ],
@@ -312,7 +321,7 @@
     },
     "b64_s128_d128_h4_f128_l4_causal_float32": {
       "candidate": "compiled-safe-ro",
-      "worst_speedup": 3.898,
+      "worst_speedup": 3.978,
       "cases": [
         "center",
         "center-pad",
@@ -368,8 +377,8 @@
     }
   },
   "no_winner": {
-    "b64_s128_d128_h16_f128_l4_causal_bfloat16": {
-      "graph-safe": "worst speedup 1.049x below 1+0.05"
+    "b64_s128_d128_h16_f128_l4_causal_float16": {
+      "graph-safe": "worst speedup 1.027x below 1+0.05"
     }
   }
 }

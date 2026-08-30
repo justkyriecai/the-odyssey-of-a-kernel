@@ -4,8 +4,8 @@
   "margin": 0.05,
   "entries": {
     "b10000_s128_d128_h4_f128_l4_causal_float32": {
-      "candidate": "compiled-sdpa",
-      "worst_speedup": 3.12,
+      "candidate": "flash-c",
+      "worst_speedup": 3.859,
       "cases": [
         "batch-10000",
         "batch-10000-pad"
@@ -97,7 +97,7 @@
     },
     "b32_s1024_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 4.109,
+      "worst_speedup": 4.323,
       "cases": [
         "stress-s1024",
         "stress-s1024-padded"
@@ -109,7 +109,7 @@
     },
     "b32_s2048_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 6.31,
+      "worst_speedup": 6.796,
       "cases": [
         "stress-s2048"
       ],
@@ -120,7 +120,7 @@
     },
     "b32_s2816_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 7.93,
+      "worst_speedup": 8.127,
       "cases": [
         "stress-s2816"
       ],
@@ -131,7 +131,7 @@
     },
     "b32_s3072_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 7.956,
+      "worst_speedup": 8.565,
       "cases": [
         "stress-s3072"
       ],
@@ -140,7 +140,7 @@
     },
     "b32_s512_d1024_h16_f1024_l2_causal_float32": {
       "candidate": "flash-tf32",
-      "worst_speedup": 2.624,
+      "worst_speedup": 2.811,
       "cases": [
         "stress-s512"
       ],
@@ -185,8 +185,8 @@
       "rejected": {}
     },
     "b64_s1024_d128_h4_f128_l4_causal_float32": {
-      "candidate": "flash-tf32",
-      "worst_speedup": 12.424,
+      "candidate": "flash-c",
+      "worst_speedup": 16.085,
       "cases": [
         "seq-1024",
         "seq-1024-pad"
@@ -333,6 +333,7 @@
         "compiled-safe": "did not run on ['center-pad']",
         "compiled-sdpa": "did not run on ['center-pad']",
         "compiled-sdpa-ro": "did not run on ['center-pad']",
+        "flash-c": "did not run on ['center-pad', 'center-padded']",
         "flash-fp32": "did not run on ['center-pad']",
         "flash-tf32": "did not run on ['center-pad', 'center-padded']",
         "fused-safe": "did not run on ['center-pad']",

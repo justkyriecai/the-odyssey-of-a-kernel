@@ -158,11 +158,16 @@ def flash_attention_fp32(
     # head_dim=256 at 64x64x2-stage wants 213 KB and refuses to launch, so the
     # tile shrinks as heads widen. Measured tuning is a later, separate step.
     if block_m is None:
-        block_m = 32 if head_dim >= 256 else 64
+        block_m = 32 if head_dim >= 256 else (128 if head_dim == 64 else 64)
     if block_n is None:
         block_n = 32 if head_dim >= 128 else 64
     if num_stages is None:
         num_stages = 1 if head_dim >= 128 else 2
+    if head_dim == 64 and num_warps == 4:
+        # Probed at the stress geometry (B=32,H=16,S=2816): 128x64 with 8 warps
+        # runs 6.76 ms against the old default's 11.0 -- 63% faster. hd=32
+        # probed within 2.4% of its default and keeps it.
+        num_warps = 8
     # 4D views pass through untouched: the first cut reshaped to 3D, and on
     # the packed-QKV layout that reshape silently COPIED q, k and v -- three
     # extra tensor copies per layer. The kernel indexes (batch, head) itself.
@@ -278,11 +283,113 @@ def flash_class(official: Any, allow_tf32: bool = False) -> type:
     return FlashFP32Transformer
 
 
+@functools.lru_cache(maxsize=None)
+def compiled_flash_class(official: Any) -> type:
+    """The flash kernel inside a compiled body: Inductor fuses the LN/FFN/
+    residual glue and dynamo traces the Triton kernel natively, so the whole
+    forward -- glue and attention both -- rides one compiled program under
+    cudagraph trees. The eager-glue variant pays ~116 unfused kernels around
+    the attention call; at batch-10000 that glue traffic, not the attention,
+    was the whole 138-vs-105 ms gap to the compiled SDPA body.
+
+    Eager pre-step (outside the graph, per the compile-boundary lesson): the
+    QKV packing cache, the prefix-mask check (it syncs), and the length
+    vector. Everything else is the compiled pure function.
+    """
+    base = flash_class(official, True)
+
+    class CompiledFlashTransformer(base):
+        def _body(self, x, lengths, drop, qkv_weights, qkv_biases):
+            import torch.nn.functional as F
+
+            batch, seq_len, d_model = x.shape
+            heads = self.config.num_heads
+            head_dim = d_model // heads
+            scale = head_dim**-0.5
+            causal = self.config.causal
+
+            for index, layer in enumerate(self.layers):
+                normed = layer.norm1(x)
+                qkv = F.linear(normed, qkv_weights[index], qkv_biases[index])
+                q, k, v = (
+                    qkv.view(batch, seq_len, 3, heads, head_dim)
+                    .permute(2, 0, 3, 1, 4)
+                    .unbind(0)
+                )
+                context = flash_attention_fp32(
+                    q, k, v, lengths, causal=causal, scale=scale, allow_tf32=True
+                )
+                context = context.transpose(1, 2).reshape(batch, seq_len, d_model)
+                out_proj = layer.attention.out_proj
+                attn_out = F.linear(context, out_proj.weight, out_proj.bias)
+                if drop is not None:
+                    attn_out = attn_out.masked_fill(drop, 0)
+                x = x + attn_out
+                x = x + layer.ffn_out(
+                    F.gelu(layer.ffn_in(layer.norm2(x)), approximate="none")
+                )
+                if drop is not None:
+                    x = x.masked_fill(drop, 0)
+
+            x = self.final_norm(x)
+            if drop is not None:
+                x = x.masked_fill(drop, 0)
+            return x
+
+        def _compiled_body(self, x):
+            key = (x.device, x.dtype, torch.is_inference_mode_enabled())
+            cache = self.__dict__.setdefault("_compiled_cache", {})
+            fn = cache.get(key)
+            if fn is None:
+                fn = torch.compile(self._body, mode="reduce-overhead", dynamic=False)
+                cache[key] = fn
+            return fn
+
+        def forward(self, x, valid_token_mask=None):
+            if (
+                not HAVE_TRITON
+                or x.device.type != "cuda"
+                or x.dtype != torch.float32
+            ):
+                return super().forward(x, valid_token_mask)
+            batch, seq_len, d_model = x.shape
+            heads = self.config.num_heads
+            if d_model // heads < 16:
+                return super().forward(x, valid_token_mask)
+            qkv_bytes = batch * seq_len * 3 * d_model * x.element_size()
+            if batch > 1 and qkv_bytes > 6e9:
+                return super().forward(x, valid_token_mask)  # batch-sliced eager path
+
+            if valid_token_mask is None:
+                lengths = torch.full((batch,), seq_len, dtype=torch.int32, device=x.device)
+                drop = None
+            else:
+                lengths = valid_token_mask.sum(dim=1, dtype=torch.int32)
+                positions = torch.arange(seq_len, device=x.device)
+                if not torch.equal(valid_token_mask, positions[None, :] < lengths[:, None]):
+                    return super().forward(x, valid_token_mask)
+                drop = ~valid_token_mask[..., None]
+
+            packed = self._fused_qkv(x)
+            qkv_weights = [w for w, _ in packed]
+            qkv_biases = [b for _, b in packed]
+            return self._compiled_body(x)(x, lengths, drop, qkv_weights, qkv_biases)
+
+    return CompiledFlashTransformer
+
+
 def _build_tf32(official: Any) -> type:
     return flash_class(official, True)
 
 
 CANDIDATES = {
+    "flash-c": (
+        "the TF32 flash kernel traced into a torch.compile(reduce-overhead) body: "
+        "Inductor fuses the glue the eager variant pays ~116 kernels for. fp32 CUDA "
+        "only; other dtypes, narrow heads, non-prefix masks and oversized batches "
+        "fall back to the eager flash/fused paths.",
+        compiled_flash_class,
+    ),
     "flash-tf32": (
         "the same Triton online-softmax attention with TF32 tensor-core dots -- a "
         "speed/accuracy trade named as its own candidate so calibration measures "

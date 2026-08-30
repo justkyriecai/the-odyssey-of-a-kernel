@@ -251,3 +251,19 @@ the point. Four swings, one GPU batch, 148 seconds of measurement:
    The interesting row: scale 0.25 pushes center's spend to 0.80 of the
    absolute budget -- the precision doc's warning that budgets do not transfer
    across scales, now with a number on it.
+
+## 2026-08-30 -- round 4: the hybrid, and a 63% tile
+
+**flash-c**: the TF32 flash kernel traced into a torch.compile(reduce-overhead)
+body -- dynamo captures user Triton kernels natively, so Inductor fuses the
+LN/FFN/residual glue the eager variant paid ~116 kernels for. At batch-10000
+that glue, not attention, was the entire 138-vs-105 ms gap to the compiled
+SDPA body: flash-c lands at 84.6 ms (3.86x) and takes the lane. seq-1024 drops
+to 4.84 ms through dispatch -- 16.1x over eager, 5.1x over the admissible
+opponent. **Tile probe at the stress geometry** (hd=64): 128x64 with 8 warps
+runs the attention kernel 63% faster than the old default; the heuristic
+change flows to the whole stress axis (s2816 75.2 ms / 8.13x, s3072 8.57x)
+and cuts shape #14 from 25.9 to 23.2 s, with the off-script comparison
+re-verified at 0 bad of 3.28e9. Review stayed light per directive: the
+self-audit's one catch was re-verifying padded lanes after each kernel change,
+and both landed PASS.

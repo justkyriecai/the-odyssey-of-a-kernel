@@ -78,7 +78,7 @@ python -m odyssey official <candidate> --shapes dev --case center -- --atol 0.00
 
 ## Development shapes
 
-Use these eight before running the full grid. Cheap enough to run after every
+Use these nine before running the full grid. Cheap enough to run after every
 change; broad enough that a win here is unlikely to be a fluke.
 
 All cases are causal (as is every official shape) and anchored on the grid's

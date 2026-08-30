@@ -81,7 +81,7 @@ python -m odyssey official <candidate> --shapes dev --case center -- --atol 0.00
 
 ## Development shapes
 
-Use these eight before running the full grid. Cheap enough to run after every
+Use these nine before running the full grid. Cheap enough to run after every
 change; broad enough that a win here is unlikely to be a fluke.
 
 All cases are causal (as is every official shape) and anchored on the grid's
@@ -178,7 +178,7 @@ correctness, or shows no credible path after five, record the evidence in
 `solutions.jsonl` with `decision: reject` and take the next direction. This
 limit is not a suggestion; it is the only thing that bounds a search.
 
-**Evidence per direction.** Before/after numbers on all eight development
+**Evidence per direction.** Before/after numbers on all nine development
 shapes, plus enough NCU counters to say *why* it helped or did not. "It got
 faster" is not a reason to keep something; knowing which stall reason went away
 is.

@@ -32,12 +32,13 @@ where unspecified, choose the framing that best shows the approach's strengths.
 - [x] task2 M0.3 solutions.jsonl correction node (n006, n007)
 - [x] task3 bookkeeping: dispatch KeyError fallback + tolerance filter + verify.py global-state tripwire (padded/dtype grid measurement deferred to task13)
 - [x] task4 D1-I1: kernels/v3_compiled.py -- pure-function body, plain-__dict__ artifact cache, cache_size_limit=64 at import, CPU eager fallback; smoke PASS
-- [~] task5 D1-I2: 4 candidates (safe/sdpa x default/ro) dev sweep RUNNING
+- [x] task5 D1-I2: dev sweep done. fp32 PASS everywhere; center parity with opponent (0.374 vs 0.368), seq-1024 1.41x ahead (compiled-sdpa 17.60ms), batch-1/batch-128 behind (eager pre-step tax). bf16/fp16 FAIL all variants (rounding-point mechanism confirmed).
+- [~] task6->I3 REPLANNED: TF32 experiment answered by M0.2 (max-autotune-notf32 never fastest); iteration spent instead on moving masks into the compiled region + decomposed mask form. Re-sweep RUNNING.
 - [ ] task6 D1-I3 TF32-legalization experiment
 - [ ] task7 D1-I4 cudagraph hygiene; D3 gate decision
 - [ ] task8 D1-I5 per-dtype fidelity table
 - [ ] task9 D2 compile-sdpa fp32 lanes I1..I5
-- [ ] task10 D4 flash I1..I2
+- [x] task10 D4 flash I1+I2 merged: kernel with per-row lengths handles causal+padding, IEEE fp32 dots; CPU fallback smoke 10/10; first GPU run RUNNING
 - [ ] task11 D4 I3..I4 stress sweep + off-script comparison
 - [ ] task12 D4 I5 sm_89 tuning
 - [ ] task13 recalibrate dispatch; official-grid validation
@@ -51,6 +52,10 @@ where unspecified, choose the framing that best shows the approach's strengths.
   max-autotune-notf32: near-exact (1.4e-6) but never fastest; wide-1024 0.44x.
 
 ### Plan Evolution Log
+- R1-1: D1-I3 re-scoped from the TF32-legalization experiment to compile-boundary
+  repair. Justification: M0.2 already measured max-autotune-notf32 (near-exact but
+  never fastest, 0.44x on wide-1024) -- the experiment's question is answered; the
+  measured deficit (batch-1 0.69x) points at the eager pre-step instead.
 - R0-1: L2's "compile==eager on seq-1024/batch-128" was a measurement artifact
   (dynamo recompile limit in the 36-main in-process sweep silently degraded
   later cases to eager). Corrected by M0.2b: RO baseline seq-1024 24.8ms

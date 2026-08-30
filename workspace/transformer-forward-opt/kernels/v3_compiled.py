@@ -9,10 +9,11 @@ instead of three, the mask built once per forward instead of once per layer.
 
 What is compiled, and what deliberately is not:
 
-- The compiled region is a pure function of (x, masks, packed weights). The
-  fused-QKV packing and mask construction run eagerly before it, because the
-  packing caches on `self` and a cache mutation inside the traced region would
-  either break the graph or silently retrace every call.
+- The compiled region is a pure function of (x, valid_token_mask, packed
+  weights); mask construction happens inside it so cudagraph trees capture
+  those kernels too. Only the fused-QKV packing runs eagerly before it,
+  because the packing caches on `self` and a cache mutation inside the traced
+  region would either break the graph or silently retrace every call.
 - `torch.compile` wraps a bound method, not the module, so what comes back is a
   plain callable. It is cached in `__dict__` -- never a submodule, so the
   script's `load_state_dict(strict=True)` weight copy sees exactly the baseline
@@ -61,17 +62,51 @@ def compiled_class(official: Any, attention_impl: str, mode: str) -> type:
         def _body(
             self,
             x: torch.Tensor,
-            keep: Optional[torch.Tensor],
-            is_causal: bool,
-            drop: Optional[torch.Tensor],
+            valid_token_mask: Optional[torch.Tensor],
             qkv_weights: list[torch.Tensor],
             qkv_biases: list[torch.Tensor],
         ) -> torch.Tensor:
-            """The whole forward as a pure function; everything Inductor sees."""
+            """The whole forward as a pure function; everything Inductor sees.
+
+            Mask construction lives INSIDE the compiled region. The first cut
+            built masks eagerly outside it, and the launch cost of those few
+            tiny kernels was the entire 0.19-vs-0.13 ms gap to the compiled
+            baseline at batch-1 -- everything the graph does not capture is
+            paid per call. Masks are also kept in the baseline's decomposed
+            form (an [S, S] triangle broadcast and a [B, 1, 1, S] key mask
+            broadcast) rather than combined into a materialized [B, 1, S, S]:
+            the combined form cost ~15% at batch-128.
+            """
             batch, seq_len, d_model = x.shape
             heads = self.config.num_heads
             head_dim = d_model // heads
             scale = head_dim**-0.5
+            causal = self.config.causal
+
+            triangle = None
+            if causal and self.ATTENTION_IMPL == FP32_SOFTMAX:
+                triangle = torch.ones(
+                    (seq_len, seq_len), dtype=torch.bool, device=x.device
+                ).triu(diagonal=1)
+            invalid_keys = (
+                None
+                if valid_token_mask is None
+                else ~valid_token_mask[:, None, None, :]
+            )
+            drop = None if valid_token_mask is None else ~valid_token_mask[..., None]
+
+            keep = None
+            is_causal = causal
+            if self.ATTENTION_IMPL == SDPA and valid_token_mask is not None:
+                key_mask = valid_token_mask[:, None, None, :]
+                if causal:
+                    tri = torch.ones(
+                        (seq_len, seq_len), dtype=torch.bool, device=x.device
+                    ).tril()
+                    keep = tri[None, None] & key_mask
+                else:
+                    keep = key_mask
+                is_causal = False
 
             for index, layer in enumerate(self.layers):
                 normed = layer.norm1(x)
@@ -82,7 +117,18 @@ def compiled_class(official: Any, attention_impl: str, mode: str) -> type:
                     .unbind(0)
                 )
 
-                context = self._attend(q, k, v, keep, is_causal, scale)
+                if self.ATTENTION_IMPL == FP32_SOFTMAX:
+                    scores = torch.matmul(q, k.transpose(-2, -1)) * scale
+                    if triangle is not None:
+                        scores = scores.masked_fill(triangle, float("-inf"))
+                    if invalid_keys is not None:
+                        scores = scores.masked_fill(invalid_keys, float("-inf"))
+                    probs = torch.softmax(scores.float(), dim=-1).to(dtype=q.dtype)
+                    context = torch.matmul(probs, v)
+                else:
+                    context = F.scaled_dot_product_attention(
+                        q, k, v, attn_mask=keep, is_causal=is_causal, scale=scale
+                    )
                 context = context.transpose(1, 2).reshape(batch, seq_len, d_model)
 
                 out_proj = layer.attention.out_proj
@@ -120,11 +166,9 @@ def compiled_class(official: Any, attention_impl: str, mode: str) -> type:
                 return super().forward(x, valid_token_mask)
 
             packed = self._fused_qkv(x)
-            keep, is_causal = self._keep_mask(x, valid_token_mask)
-            drop = None if valid_token_mask is None else ~valid_token_mask[..., None]
             qkv_weights = [w for w, _ in packed]
             qkv_biases = [b for _, b in packed]
-            return self._compiled_body(x)(x, keep, is_causal, drop, qkv_weights, qkv_biases)
+            return self._compiled_body(x)(x, valid_token_mask, qkv_weights, qkv_biases)
 
     CompiledTransformer.__name__ = (
         f"Compiled{'SDPA' if attention_impl == SDPA else 'Safe'}Transformer"

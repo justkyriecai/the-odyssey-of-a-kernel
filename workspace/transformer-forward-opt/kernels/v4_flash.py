@@ -144,13 +144,22 @@ def flash_attention_fp32(
     *,
     causal: bool,
     scale: float,
-    block_m: int = 64,
-    block_n: int = 64,
+    block_m: Optional[int] = None,
+    block_n: Optional[int] = None,
     num_warps: int = 4,
-    num_stages: int = 2,
+    num_stages: Optional[int] = None,
 ) -> torch.Tensor:
     """q, k, v: [B, H, S, hd] fp32 (any stride); lengths: [B] int32. -> [B, H, S, hd]."""
     batch, heads, seq_len, head_dim = q.shape
+    # Shared memory scales with block area x head_dim; sm_89 has ~99 KB per SM.
+    # head_dim=256 at 64x64x2-stage wants 213 KB and refuses to launch, so the
+    # tile shrinks as heads widen. Measured tuning is a later, separate step.
+    if block_m is None:
+        block_m = 32 if head_dim >= 256 else 64
+    if block_n is None:
+        block_n = 32 if head_dim >= 128 else 64
+    if num_stages is None:
+        num_stages = 1 if head_dim >= 128 else 2
     q3 = q.reshape(batch * heads, seq_len, head_dim)
     k3 = k.reshape(batch * heads, seq_len, head_dim)
     v3 = v.reshape(batch * heads, seq_len, head_dim)

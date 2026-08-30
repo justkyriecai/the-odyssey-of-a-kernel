@@ -28,9 +28,22 @@ if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
   CANDIDATES=(fused-safe fused-sdpa graph-safe graph-sdpa)
 fi
 
+# `|| true` on every rung: a candidate that fails a case reports exit 2, which
+# is a recorded verdict, not a reason to abandon the other rungs. fused-sdpa
+# failing bf16 is the documented finding that motivates dispatch; the first L0
+# run of this ladder aborted on exactly that and never measured the opponent.
 "$PY" "$WS/verify.py" "${CANDIDATES[@]}" --shapes "$SHAPES" --quiet --record --notes "ladder L0" -- \
-  "${TOLERANCE[@]}"
+  "${TOLERANCE[@]}" || true
+# --benchmark-on-failure, on the compiled rungs only. Compiling the baseline
+# moves the accuracy reference itself: under TF32 the max-autotune build drifts
+# ~5e-3 from its own eager version, so even a numerically identical candidate
+# (passthrough) fails the official tolerance against it -- measured on the RTX
+# 6000 Ada, 2026-08-30. Correctness is judged on the uncompiled rung above,
+# where the reference is the real one; these rungs exist for the timing, which
+# the script would otherwise skip on the spurious FAIL. Exit code 2 and
+# passed=False are still recorded -- the flag skips nothing, it only stops the
+# script from withholding the number this rung is for.
 "$PY" "$WS/verify.py" "${CANDIDATES[@]}" --shapes "$SHAPES" --quiet --record --notes "ladder L2" -- \
-  "${TOLERANCE[@]}" --compile-baseline --compile-mode max-autotune
+  "${TOLERANCE[@]}" --compile-baseline --compile-mode max-autotune --benchmark-on-failure || true
 "$PY" "$WS/verify.py" passthrough --shapes "$SHAPES" --quiet --record --notes "ladder compile-only" -- \
-  "${TOLERANCE[@]}" --compile-baseline --compile-mode max-autotune
+  "${TOLERANCE[@]}" --compile-baseline --compile-mode max-autotune --benchmark-on-failure || true

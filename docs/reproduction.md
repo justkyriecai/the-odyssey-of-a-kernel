@@ -51,6 +51,11 @@ RTX 4090 around $0.28-0.50/hr, A100 80GB around $1/hr, H100 from roughly
 $1/hr spot. Forty hours of 4090 development plus a few hours of H100 validation
 is tens of dollars, which is why none of this needs a purchase.
 
+One caveat from the real grid: appendix shape #14 (`S=100000, d=1024, B=32`)
+does not fit a 24 GB card at fp32 -- q/k/v alone are ~38 GB -- so the 4090
+covers 13 of the 14 shapes and the stress shape belongs in the 80 GB-class
+validation hours, not the development loop. See `docs/benchmark-anatomy.md` §9.
+
 If you use a different card, **rewrite the hardware section of the phase
 prompts** before running them. Prompts written for one architecture send an
 agent chasing features the hardware does not have, and that is the single most
@@ -103,14 +108,15 @@ cleared this.
 
 ## The workload grid
 
-`bench/shapes/official.json` is a **placeholder** holding only the script's
-documented defaults. The Track 3 appendix publishes the evaluation grid; paste
-it in before Phase 3. Until then, every number measured against `official` is a
-number about one shape.
+`bench/shapes/official.json` holds the 14 evaluation shapes from Appendix 3.7
+of the problem statement -- a one-factor sweep around `B=64, S=128, d=128,
+H=4, ffn=128, L=4`, every shape causal, plus the `S=100000` stress case. The
+table does not specify dtype, padding or input scale; those default to the
+script's own defaults and the organizers can move them with flags.
 
-`bench/shapes/dev.json` is eight representative cases for iterating, and
-`bench/shapes/smoke.json` is a CPU-only correctness gate covering every
-combination of causal and padding.
+`bench/shapes/dev.json` is the iteration set, aligned with the grid's center
+point, and `bench/shapes/smoke.json` is a CPU-only correctness gate covering
+every combination of causal and padding.
 
 ## Re-run the agent workflow
 

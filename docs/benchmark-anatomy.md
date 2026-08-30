@@ -140,6 +140,46 @@ are load-bearing. This is a reading of the source, and the smoke set exercises
 every combination of causal and padding precisely so it is checked rather than
 believed -- `bench/shapes/smoke.json`, cases `padded` and `causal-padded`.
 
+## 9. What the appendix grid says
+
+The evaluation shapes (Appendix 3.7, transcribed into
+`bench/shapes/official.json`) are not a random sample. Three structural facts:
+
+**Every one of the 14 shapes is causal.** There is no non-causal case in the
+grid. The causal path is not a variant to support; it is the only path that
+gets scored -- which also means the baseline's habit of rebuilding the
+`[S, S]` triangle once per layer is paid on every single evaluation shape.
+
+**The grid is a one-factor-at-a-time sweep** around a center of
+`B=64, S=128, d_model=128, heads=4, ffn=128, layers=4`: batch sweeps
+1→4→16→64→128→10000, width sweeps 32→128→1024 (with `ffn_dim` tracking
+`d_model` 1:1, not the conventional 4:1), heads sweep 1→2→4→16 (so `head_dim`
+spans 8 to 256, crossing fused-attention backend boundaries at both ends), and
+sequence sweeps 32→128→1024. The center point is ~0.4M parameters -- an order
+of magnitude smaller than the script's own defaults, so the launch-bound
+argument in §7 gets *stronger* on the real grid, not weaker. For Phase 3 this
+is a gift: the shape groups are the sweep's own axes, and the boundaries to
+find are where each axis changes the bottleneck regime.
+
+**Shape #14 cannot be run by the eager baseline at all.**
+`B=32, d=1024, H=16, S=100000, L=2`:
+
+| Tensor | Shape | fp32 size |
+|---|---|---:|
+| causal mask | `[1e5, 1e5]` bool | ~10 GB |
+| one score slice | `[1, 1, 1e5, 1e5]` | ~40 GB |
+| full scores | `[32, 16, 1e5, 1e5]` | ~12.8 TB |
+| each of q/k/v | `[32, 16, 1e5, 64]` | ~12.8 GB |
+| input x | `[32, 1e5, 1024]` | ~12.8 GB |
+
+No hardware materializes the scores; in fp32, q/k/v alone overflow a 24 GB
+card before attention starts. Consequences: memory-efficient causal attention
+(never materializing `S x S`) is a *requirement* on this shape, not an
+optimization; the official script as written cannot produce a reference output
+for it, so correctness has to be established against a chunked re-computation
+of the same arithmetic; and validating it at fp32 needs an 80 GB-class card.
+Treat it as its own regime in Phase 3, with its own evidence.
+
 ## What this implies for where the time goes
 
 | Finding | What it rules out | What it argues for |

@@ -94,7 +94,7 @@ guess.
 | Path | Purpose |
 |---|---|
 | `bench/official/` | The organizer's evaluator, vendored unmodified, plus a reading of its two contradictions |
-| `bench/shapes/` | Shape sets as data: `smoke` (CPU correctness), `dev` (eight representative), `official` (**placeholder** until the appendix grid is published) |
+| `bench/shapes/` | Shape sets as data: `smoke` (CPU correctness), `dev` (iteration set, aligned with the grid's center), `official` (the 14 appendix shapes) |
 | `odyssey/` | The harness: script loader, shapes, registry, evaluate, ladder, calibrate, roofline, ablation, CLI |
 | `kernels/` | Candidates: `passthrough` (control), `fused-safe`, `fused-sdpa`, `graph-safe`, `graph-sdpa`, `dispatch` |
 | `prompts/` | The three phase prompts, plus the shared block they are built from |
@@ -151,10 +151,12 @@ Every workspace then measures against the same file, and the md5 proves it.
 
 ## Two caveats stated up front
 
-**The evaluation grid is not in this repository yet.** The problem statement's
-appendix publishes it; `bench/shapes/official.json` is a placeholder holding only
-the script's documented defaults. Until it is pasted in, any claim measured
-against `official` is a claim about one shape.
+**Appendix shape #14 breaks the evaluator's own baseline.** At
+`S=100000, d=1024, B=32`, the eager reference would need a ~10 GB causal mask
+and ~12.8 TB of score tensors -- it cannot run on any hardware, and in fp32 its
+q/k/v alone overflow a 24 GB card. Memory-efficient causal attention is a
+requirement on that shape, not an optimization, and its reference output has to
+be recomputed in chunks. `docs/benchmark-anatomy.md` §9 has the arithmetic.
 
 **The runs are not deterministic.** Search order, profiling noise, GPU
 scheduling and model behaviour all vary. Re-running the prompts will not

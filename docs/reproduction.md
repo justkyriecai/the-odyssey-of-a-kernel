@@ -18,6 +18,10 @@ cd the-odyssey-of-a-kernel
 TORCH_INDEX=https://download.pytorch.org/whl/cu124 ./scripts/setup_env.sh
 ```
 
+Renting the card on RunPod — pod spec, the first-ten-minutes gate, the NCU
+permission question, and how evidence leaves the pod — is covered in
+`docs/runpod.md`.
+
 Then confirm the machine is actually ready:
 
 ```bash

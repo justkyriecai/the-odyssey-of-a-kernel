@@ -116,6 +116,7 @@ guess.
 | `docs/benchmark-anatomy.md` | Eight things the evaluator's source says, two of which contradict the obvious guess |
 | `docs/precision-budget.md` | What the tolerance actually buys, and where we refuse to spend it |
 | `docs/reproduction.md` | Environment, the card, and how to re-run the workflow |
+| `docs/runpod.md` | Renting the card: pod spec, the ten-minute D0 gate, the NCU permission probe, evidence sync |
 | `docs/deliverables.md` | What the project must be able to show, and which artifact shows it |
 | `docs/pitch.md` | The three-minute script and the Q&A preparation |
 | `scripts/` | `check_gpu.sh` (D0 gate, including whether NCU may profile), setup, ladder, sweep, smoke |

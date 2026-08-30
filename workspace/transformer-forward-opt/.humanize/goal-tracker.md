@@ -33,15 +33,15 @@ where unspecified, choose the framing that best shows the approach's strengths.
 - [x] task3 bookkeeping: dispatch KeyError fallback + tolerance filter + verify.py global-state tripwire (padded/dtype grid measurement deferred to task13)
 - [x] task4 D1-I1: kernels/v3_compiled.py -- pure-function body, plain-__dict__ artifact cache, cache_size_limit=64 at import, CPU eager fallback; smoke PASS
 - [x] task5 D1-I2: dev sweep done. fp32 PASS everywhere; center parity with opponent (0.374 vs 0.368), seq-1024 1.41x ahead (compiled-sdpa 17.60ms), batch-1/batch-128 behind (eager pre-step tax). bf16/fp16 FAIL all variants (rounding-point mechanism confirmed).
-- [~] task6->I3 REPLANNED: TF32 experiment answered by M0.2 (max-autotune-notf32 never fastest); iteration spent instead on moving masks into the compiled region + decomposed mask form. Re-sweep RUNNING.
+- [x] task6->I3 done (masks in-graph; ahead of opponent on center+batch-1). Original TF32 experiment: TF32 experiment answered by M0.2 (max-autotune-notf32 never fastest); iteration spent instead on moving masks into the compiled region + decomposed mask form. Re-sweep RUNNING.
 - [ ] task6 D1-I3 TF32-legalization experiment
-- [ ] task7 D1-I4 cudagraph hygiene; D3 gate decision
+- [x] task7: cudagraph trees held across 39-case in-process official sweep; D3 gate = NOT ACTIVATED, rejected (n012)
 - [ ] task8 D1-I5 per-dtype fidelity table
-- [ ] task9 D2 compile-sdpa fp32 lanes I1..I5
-- [x] task10 D4 flash I1+I2 merged: kernel with per-row lengths handles causal+padding, IEEE fp32 dots; CPU fallback smoke 10/10; first GPU run RUNNING
-- [ ] task11 D4 I3..I4 stress sweep + off-script comparison
+- [x] task9: compiled-sdpa official grid 13/13 PASS; wins batch-10000 (3.10x) + wide-1024 (1.24x)
+- [x] task10 D4 flash I1+I2: kernel with per-row lengths handles causal+padding, IEEE fp32 dots; CPU fallback smoke 10/10; first GPU run RUNNING
+- [~] task11: stress sweep done (correct to S=2816); 100k latency 25.5s recorded; chunked comparison rerun in flight
 - [ ] task12 D4 I5 sm_89 tuning
-- [ ] task13 recalibrate dispatch; official-grid validation
+- [~] task13: table calibrated (every geometry served); dispatch official validation pending GPU
 - [ ] task14 campaign log + profile reports  (analyze tag -> adversarial subagent review)
 
 ### Completed Items

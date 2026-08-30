@@ -45,7 +45,7 @@ sys.path.insert(0, str(HERE))
 from verify import load_script, load_candidates  # noqa: E402
 
 
-def chunked_reference(model, x, valid_mask, *, q_block: int = 512):
+def chunked_reference(model, x, valid_mask, *, q_block: int = 512, out_device=None):
     """The baseline's arithmetic, orchestrated so nothing S x S materializes.
 
     Op-for-op the sequence is BaselineTransformer.forward's: pre-LN, three
@@ -98,7 +98,7 @@ def chunked_reference(model, x, valid_mask, *, q_block: int = 512):
             h = h.masked_fill(drop, 0)
 
         h = model.final_norm(h).masked_fill(drop, 0)
-        outs.append(h)
+        outs.append(h if out_device is None else h.to(out_device))
     return torch.cat(outs, dim=0)
 
 
@@ -183,11 +183,21 @@ def main() -> int:
     print("(no official-script row exists for this shape: its reference OOMs "
           "in the accuracy phase before any benchmark)")
 
+    # Three 12 GiB tensors (input, reference, candidate output) do not coexist
+    # on this card next to working memory: the candidate output is computed
+    # first and parked on the host, the reference accumulates straight to the
+    # host, and the comparison -- the script's own compare_outputs, unchanged --
+    # runs on CPU tensors, which it is indifferent to.
+    torch.cuda.empty_cache()
+    with torch.inference_mode():
+        candidate_out = optimized(x, mask).cpu()
+    torch.cuda.empty_cache()
     print("building chunked reference (per batch item, query blocks; may take minutes)...")
     torch.cuda.reset_peak_memory_stats()
     with torch.inference_mode():
-        reference = chunked_reference(baseline_gpu, x, mask, q_block=args.q_block)
-        candidate_out = optimized(x, mask)
+        reference = chunked_reference(
+            baseline_gpu, x, mask, q_block=args.q_block, out_device="cpu"
+        )
     result = module.compare_outputs(reference, candidate_out, rtol=args.rtol, atol=args.atol)
     ref_peak = torch.cuda.max_memory_allocated() / 2**30
     print(f"OFF-SCRIPT comparison vs chunked reference (judge: the script's own "

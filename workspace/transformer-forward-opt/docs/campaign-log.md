@@ -125,3 +125,47 @@ Scoreboard vs the admissible opponent, fp32: behind 1.60x on center
 (0.589 vs 0.368), behind ~1.4x batch-1 (0.192 vs 0.133); ahead 1.28x seq-1024,
 ahead at batch-10000 (opponent unmeasured there yet). bf16/fp16: legally ahead
 everywhere measured. Next: the compile-fused candidate.
+
+## 2026-08-30 -- round 1: the compiled candidates, the flash trade, the table
+
+**compile-fused (kernels/v3_compiled.py).** The fused body as a pure function
+of (x, valid_token_mask, packed weights), compiled inside the candidate,
+artifact cached in `__dict__` so the strict weight copy never sees it; GEMMs
+stay on cuBLAS by mode choice. Two iterations mattered: the first sweep hit
+parity on center and lost batch-1 by 1.4x because masks and packing ran
+eagerly outside the compiled region -- every uncaptured kernel is paid per
+call -- and moving mask construction in-graph (decomposed broadcast form, not
+a materialized [B,1,S,S]) flipped it: center 0.337 vs the opponent's 0.368,
+batch-1 0.119 vs 0.133, both ahead for the first time. bf16/fp16 fail at
+0.0625/0.0098 for every compiled variant including the exact-fp32-softmax
+body: the reference quantizes scores to bf16 before its fp32 softmax and
+Inductor's fusion skips that rounding -- measured confirmation of the
+rounding-point mechanism, and why those lanes stay on graph-safe.
+
+**flash (kernels/v4_flash.py).** Online-softmax Triton attention, padding as
+per-row lengths, O(S*d) memory. The IEEE-fp32 variant is correct everywhere it
+runs (drift 7-8e-4 at the stress geometry through the unmodified script, to
+S=2816) but slow at d_model=1024 -- CUDA-core fp32 is ~4x under TF32 tensor
+cores, and the baseline's TF32 GEMMs outrun the saved traffic. The named trade
+flash-tf32 (tensor-core dots, fp32 recurrence) survives the official tolerance
+on every measured geometry (drift 1.3-1.9e-3) and owns the attention axis:
+seq-1024 6.50 ms (12.0x eager, 3.8x the admissible opponent), stress-s2816
+80.3 ms (7.6x). Its worst margin: 2.1e-3 abs at batch-10000, rescued by the
+rel branch -- recorded, and it does not serve that geometry anyway.
+
+**Shape #14 evidence, per the agreed framing.** The chunked reference
+orchestrator reproduces the unmodified script EXACTLY at S=2048 (max diff 0),
+then extrapolates: at S=100000 the batch-sliced flash-tf32 forward runs in
+25.48 s median (p90 25.66, n=3, peak 36.8 GiB) -- a latency, labeled
+OFF-SCRIPT, for a shape whose reference OOMs in the script's own accuracy
+phase; the off-script element-wise comparison runs on host memory.
+
+**The table (runs/dispatch_table.json).** Calibration over 200+ rows at the
+official tolerance admits per geometry on worst-case speedup: compiled-safe-ro
+takes the launch-bound group (worst cases 2.1-12.6x), compiled-sdpa takes
+batch-10000 (3.10x) and wide-1024 (1.24x), flash-tf32 takes seq-1024 (12.0x)
+and the stress axis, graph-safe keeps bf16/fp16 (2.4-2.6x) with every
+sdpa/compiled failure named in the rejection column. flash-tf32 at wide-1024
+is rejected at 1.037x -- below the 1.05 margin -- which is the admission rule
+doing its job. The insurance direction (manual multi-slot graphs) never
+activated: cudagraph trees held across in-process official sweeps.

@@ -119,7 +119,7 @@ guess.
 | `docs/runpod.md` | Renting the card: pod spec, the ten-minute D0 gate, the NCU permission probe, evidence sync |
 | `docs/deliverables.md` | What the project must be able to show, and which artifact shows it |
 | `docs/pitch.md` | The three-minute script and the Q&A preparation |
-| `scripts/` | `check_gpu.sh` (D0 gate, including whether NCU may profile), setup, ladder, sweep, smoke |
+| `scripts/` | `setup_agent.sh` (humanize + the two skills), `check_gpu.sh` (D0 gate, including whether NCU may profile), setup, ladder, sweep, smoke |
 
 ## Quick start
 
@@ -127,6 +127,7 @@ guess.
 git clone https://github.com/justkyriecai/the-odyssey-of-a-kernel.git
 cd the-odyssey-of-a-kernel
 ./scripts/setup_env.sh          # TORCH_INDEX=... for a specific CUDA wheel
+./scripts/setup_agent.sh        # humanize plugin and the two research skills
 ./scripts/check_gpu.sh          # driver, torch, and whether ncu may profile
 ```
 
@@ -141,15 +142,23 @@ python -m odyssey official dispatch --case center -- --atol 0.001 --rtol 0.01
 
 ## Agent workflow dependencies
 
-The loop runs on Claude Code with one plugin and two skills:
+The loop runs on Claude Code with one plugin and two skills. None of them know
+what a transformer is — this is the method's toolchain, and it is the same for
+any operator:
 
 ```bash
-# humanize: the plan/execute/verify harness
-/plugin marketplace add PolyArch/humanize
-/plugin install humanize@PolyArch
+./scripts/setup_agent.sh        # humanize, KernelWiki, ncu-report-skill; idempotent
 ```
 
+It installs the plan/execute/verify harness (`humanize@PolyArch`) and clones the
+two research skills into `~/.claude/skills/`, then verifies each one is visible
+rather than assuming the install worked. Restart the session afterwards so they
+load. The equivalent by hand:
+
 ```bash
+/plugin marketplace add PolyArch/humanize
+/plugin install humanize@PolyArch
+
 mkdir -p ~/.claude/skills && cd ~/.claude/skills
 git clone https://github.com/mit-han-lab/KernelWiki.git
 git clone https://github.com/mit-han-lab/ncu-report-skill.git

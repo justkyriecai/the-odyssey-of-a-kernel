@@ -119,11 +119,18 @@ Long searches must survive an SSH drop:
 tmux new -s odyssey          # reattach later with: tmux attach -t odyssey
 ```
 
-Inside tmux, install Claude Code and the workflow dependencies from
-`README.md` (humanize plugin, KernelWiki and ncu-report-skill under
-`~/.claude/skills/`), then create the implementation workspace per
-`docs/reproduction.md` — the search runs in `workspaces/`, never in the
-release clone — and paste `prompts/transformer-layer/phase1.md`.
+Inside tmux, install Claude Code, then the workflow dependencies:
+
+```bash
+./scripts/setup_agent.sh     # humanize, KernelWiki, ncu-report-skill, then verifies each
+```
+
+It ends `READY` or `NOT READY`, and a `NOT READY` here is worth more than the
+five minutes it costs: a missing `humanize` is the one dependency the ablation
+says carries most of the method. Restart the session so the plugin and skills
+load. Then create the implementation workspace per `docs/reproduction.md` — the
+search runs in `workspaces/`, never in the release clone — and paste
+`prompts/transformer-layer/phase1.md`.
 
 One caution: the API key you log in with lives on that pod while the session
 runs. Secure Cloud, and log out (`claude logout` or wipe the credential file)

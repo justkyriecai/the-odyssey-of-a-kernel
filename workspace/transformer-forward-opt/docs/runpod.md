@@ -77,13 +77,51 @@ What lives on it, after `infra/runpod/bootstrap.sh`:
 - **Template**: a PyTorch `-devel` image (e.g. `runpod/pytorch:*-cuda12.x-devel-ubuntu22.04`).
   The `-devel` part carries `nvcc`, which `torch.utils.cpp_extension` needs the
   moment a candidate is CUDA C++ rather than Triton.
-- **CUDA filter**: filter hosts to CUDA ≥ 12.6 so the default PyPI torch
-  wheel's bundled runtime is satisfied by the host driver.
+- **CUDA filter**: filter hosts to CUDA ≥ the torch wheel's runtime (below).
 - **Storage**: **Network Volume** (above), 50 GB. Container disk 20 GB; it holds
   the OS and nothing you care about.
 - **SSH**: add your public key in RunPod account settings *before* creating the
   pod; connect with the "SSH over exposed TCP" command the pod page shows.
   The web terminal is the fallback, not the plan.
+
+## CUDA versions: three numbers, two rules
+
+Nothing in this workspace needs a particular CUDA release -- SDPA, CUDA Graphs,
+TF32 and bf16 all predate 12.x, and the 4090 (sm_89) and the 80 GB cards
+(sm_80 / sm_90) are supported by every 12.x and 13.x wheel. What has to line up
+is the relationship between three different "CUDA versions" a pod shows you:
+
+| | What it is | Where to read it | Who chooses it |
+|---|---|---|---|
+| **Driver** | Host kernel module; the *highest* CUDA it can run | `nvidia-smi` header ("CUDA Version") | The host. Cannot be changed from a pod. |
+| **Runtime** | The CUDA libraries bundled inside the torch wheel | `python -c "import torch; print(torch.version.cuda)"` | You, via `TORCH_INDEX` in `setup_env.sh` |
+| **Toolkit** | `nvcc` and Nsight in the container image | `nvcc --version` | You, via the pod template |
+
+1. **Driver ≥ runtime.** A driver runs any *older* runtime, never a newer one.
+   The failure is `torch.cuda.is_available() == False` or "CUDA driver version
+   is insufficient" -- and it appears on whichever pod happens to have an older
+   host, which matters on a network volume that moves between pods. So pin the
+   runtime explicitly rather than taking whatever PyPI's default wheel ships
+   that week, and filter every pod to hosts whose driver covers it:
+
+   ```bash
+   TORCH_INDEX=https://download.pytorch.org/whl/cu128 ./scripts/setup_env.sh   # runtime 12.8
+   # then, in the deploy dialog: CUDA filter >= 12.8 (driver >= 570)
+   ```
+
+   Minimum drivers, for reading the filter: 12.4 → 550, 12.6 → 560,
+   12.8 → 570, 13.0 → 580.
+
+2. **Toolkit major == runtime major.** Only `torch.utils.cpp_extension` cares
+   (CUDA C++ candidates); it refuses to build across a major mismatch and warns
+   on a minor one. Triton and `torch.compile` do not use `nvcc` at all -- Triton
+   ships its own `ptxas`. So a `cuda12.x-devel` image alongside a cu12x wheel is
+   enough, and the image's preinstalled torch is irrelevant: `setup_env.sh`
+   builds its own venv on the volume.
+
+Neither rule involves CUDA 13. It exists, nothing here needs it, and a 13.x
+driver runs a 12.8 wheel fine. FP8 is a decision, not a version question
+(`docs/precision-budget.md`).
 
 ## First ten minutes
 
@@ -212,8 +250,11 @@ claude plugin install runpod@runpod
 ```
 
 then `/reload-plugins` and `/mcp` → **runpod** → sign in (OAuth; no API key is
-stored). Useful for automating the create-attach-terminate cycle once the
-volume exists. It is not needed for anything above.
+stored). The alternative is RunPod's own stdio server, `@runpod/mcp-server`,
+registered in a git-ignored `.mcp.json` at the repository root with
+`RUNPOD_API_KEY` read from the environment. Either is useful for automating the
+create-attach-terminate cycle once the volume exists; neither is needed for
+anything above.
 
 ## Teardown checklist
 

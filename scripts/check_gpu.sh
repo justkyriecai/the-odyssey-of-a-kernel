@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 # D0 gate. If any of this fails, fix it before writing a single kernel --
 # discovering a broken profiler on day two costs a day.
+#
+#   ./scripts/check_gpu.sh                      driver, torch, ncu permission, then the
+#                                               workspace's own smoke test if there is one workspace
+#   ./scripts/check_gpu.sh <workspace-name>     the same, naming the workspace
 set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -18,7 +22,18 @@ else
 fi
 
 step "torch"
-"$PY" -m odyssey doctor || status=1
+"$PY" - <<'PY' || status=1
+import sys, torch
+print(f"python {sys.version.split()[0]}   torch {torch.__version__}   cuda {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    print(f"cuda runtime {torch.version.cuda}")
+    for i in range(torch.cuda.device_count()):
+        p = torch.cuda.get_device_properties(i)
+        print(f"  [{i}] {p.name}  sm_{p.major}{p.minor}  {p.total_memory / 2**30:.1f} GiB  {p.multi_processor_count} SMs")
+else:
+    print("  no CUDA device. Correctness runs on CPU; every latency number needs a GPU.")
+    raise SystemExit(1)
+PY
 
 step "Nsight Compute"
 if command -v ncu >/dev/null 2>&1; then
@@ -40,9 +55,20 @@ if command -v nvidia-smi >/dev/null 2>&1; then
   echo "  sudo nvidia-smi --lock-memory-clocks=<min>,<max>"
 fi
 
-step "correctness smoke on CPU"
-"$PY" -m odyssey bench fused-safe passthrough --shapes smoke --device cpu \
-  --trials 2 --warmup 2 --repeats 4 --rounds 1 --no-record || status=1
+step "workspace smoke"
+WS="${1:-${WORKSPACE:-}}"
+if [[ -z "$WS" ]]; then
+  candidates=(workspace/*/)
+  if [[ ${#candidates[@]} -eq 1 && -d "${candidates[0]}" ]]; then
+    WS="$(basename "${candidates[0]}")"
+  fi
+fi
+if [[ -n "$WS" && -x "workspace/$WS/scripts/smoke.sh" ]]; then
+  echo "workspace/$WS"
+  "workspace/$WS/scripts/smoke.sh" || status=1
+else
+  echo "no single workspace with scripts/smoke.sh -- pass the workspace name to run its smoke test"
+fi
 
 printf '\n=== %s ===\n' "$([[ $status -eq 0 ]] && echo READY || echo NOT READY)"
 exit $status

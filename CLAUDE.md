@@ -1,82 +1,69 @@
 # Agent Instructions
 
-This repository is the workflow and harness for TikTok TechJam 2026 Track 3
-(GPU kernel for a transformer layer). Read `README.md` and
-`docs/benchmark-anatomy.md` before changing anything that measures.
+This repository is an agent harness for kernel optimization: phase prompts,
+research skills, and the rules below. Each task lives in `workspace/<name>/`
+with its own `CLAUDE.md`, which adds the task's hard facts; read it before
+touching anything in that directory.
 
-## Hard rules
+## Repository rules
 
-- **Never modify `bench/official/torch_transformer_benchmark.py`.** It is the
-  organizer's evaluator, vendored so that every number is traceable to a known
-  file. Its md5 is recorded in `bench/official/README.md` and checked by
-  `odyssey doctor`. To run a candidate through it, use
-  `odyssey official <candidate>`, which patches `UserOptimizedTransformer` at
-  runtime and calls the script's own `main()`.
-- **Never reimplement the correctness rule or the timing protocol.** Import them
-  from the script via `odyssey.official`. If a harness number ever disagrees
-  with the script's own output, that is a bug in the harness, not a difference
-  of opinion about the metric.
-- **Target `--atol 0.001 --rtol 0.01`**, the stricter of the two readings in the
-  script. Zero bad elements; non-finite values fail outright.
-- **Do not run the optimization search in this repository.** Create a workspace
-  under `workspaces/` (git-ignored) and run there, with `TECHJAM_BENCHMARK`
-  pointing back at the vendored script.
-- **English for everything repository-facing** — code, comments, docs, prompts,
+- English for everything repository-facing: code, comments, docs, prompts,
   commit messages. This will be read by people who did not write it.
+- **Never modify a vendored evaluator** (`workspace/*/bench/official/`). Its md5
+  is recorded next to it. A number is only a number if it came from that file.
+- **Never re-implement an evaluator's correctness rule or timing protocol.**
+  Run the evaluator; read its verdict. Each workspace's `verify.py` exists for
+  exactly that: it calls the evaluator's own `main()` with a candidate patched
+  in and returns its exit code.
+- Generated evidence lives under `workspace/<name>/runs/` and is committed:
+  `benchmark.csv`, `solutions.jsonl`, dispatch tables, text exports of
+  profiles. Binary profiler dumps (`*.ncu-rep`, `*.nsys-rep`) are not.
+- `ref/` is reference material and is git-ignored.
+- Candidates already present in a workspace's `kernels/` are prior output of
+  this workflow, not a specification. Measure them before trusting them.
 
-## Adding a candidate
+## Expected workflow for a task
 
-Candidates live in `kernels/` and register through `odyssey.registry.register`.
-The contract is the official script's, not ours:
+1. Environment: `./scripts/setup_env.sh`, `./scripts/setup_agent.sh`, then
+   `./scripts/check_gpu.sh` on the GPU box -- the profiler permission probe in
+   it is the reason to run it on day zero.
+2. Work inside `workspace/<name>/`. Read its `README.md` and `CLAUDE.md`, then
+   the evaluator under `bench/official/` end to end.
+3. Read the phase prompt under `prompts/`. Consult the workspace's `docs/` when
+   the evaluator's rules are unclear.
+4. Use `KernelWiki` for kernel research and `ncu-report-skill` for Nsight
+   Compute reports.
+5. Draft the plan in `docs/draft.md`, then `/humanize:gen-plan`, then
+   `/humanize:start-rlcr-loop`.
+6. Every measurement goes to `runs/benchmark.csv` (`verify.py --record`).
+   Every candidate goes to `runs/solutions.jsonl` with a parent link, forming a
+   DAG; rejected branches included. Every major direction keeps an NCU report
+   under `runs/profile/`.
 
-1. `forward(x, valid_token_mask=None) -> [batch, seq_len, d_model]`.
-2. Parameter names compatible with `BaselineTransformer` — `copy_model_weights`
-   loads the baseline state dict with `strict=True`. Subclass it and override
-   `forward`; derive fused weights lazily on the first call; register extra
-   buffers with `persistent=False`.
-3. Declare `requires=` honestly (`cuda`, `half`, `no-padding`, ...). The harness
-   skips a candidate whose requirements a case does not meet and says so, rather
-   than silently reporting a number from a fallback path.
-4. Run `./scripts/smoke.sh` before anything else. It covers every combination of
-   causal and padding on CPU in seconds, and that cross is where reimplemented
-   attention breaks — invisibly at `--padding-ratio 0`.
+## Disciplines
 
-**A speed/accuracy trade is a separate named candidate, never a flag on an
-existing one.** `fused-safe` and `fused-sdpa` differ only in whether softmax
-happens in fp32; they are two registered candidates so that calibration can
-measure both on the actual hardware and admit whichever is correct *and* faster.
-That pattern is the house style.
+- **Five iterations per direction, then move on.** If a direction cannot be
+  implemented cleanly, fails correctness, or shows no credible path after five,
+  record the evidence with `decision: reject` and take the next-ranked
+  direction.
+- **Rank before implementing.** The draft lists candidate directions, orders
+  them by expected benefit against implementation risk, and splits each into
+  subtasks.
+- **Never silently move the goalposts.** The target speedup is set by the human.
+  Reach it, or produce benchmark and profiling evidence for why this round
+  cannot. Do not redefine the target or swap in an easier baseline.
+- **A speed/accuracy trade is a separate named candidate**, never a flag on an
+  existing one, so calibration can measure both and admit whichever is correct
+  *and* faster.
+- **Report the median with p90 next to it**, never a best-of run. Always name
+  the baseline. Run the full shape set, not the one case that looks good.
 
-## The recording discipline
+## Prompts
 
-Every measurement appends to `runs/benchmark.csv`; every candidate appends a
-node to `runs/solutions.jsonl` with a parent link. Record rejected branches with
-`decision: reject` and the evidence that killed them — a dead end recorded on
-the day it died is evidence, and the same dead end reconstructed on the last
-night is a guess.
+After editing any `_shared.md`, run `python scripts/build_prompts.py` -- the
+phase prompts each carry an expanded copy so they stay self-contained when
+pasted into a session.
 
-Cap each optimization direction at five iterations. If it cannot be implemented
-cleanly, fails correctness, or shows no credible path after five, write down
-what you learned and take the next-ranked direction.
-
-## Reporting numbers
-
-- Median, with p90 next to it. Never a best-of run.
-- Always name the baseline. "2.7x" without "than what" is not a result.
-- Run the full shape set, not the one case that looks good. Tuning on `default`
-  until everything else regresses is the standard way to lose this.
-- Roofline plots use **measured** ceilings from `odyssey peak`. Every entry in
-  `DEVICE_PEAKS` is marked `verified=False` because it came from a spec sheet.
-
-## Generated vs. source
-
-`runs/`, `outputs/`, `profile/`, `workspaces/` and `ref/` are git-ignored.
-Nothing there is source, and nothing there should be needed to understand the
-repository. `docs/assets/` holds committed figures; regenerate them with
-`odyssey roofline` and `odyssey ablation --plot`.
-
-After editing `prompts/transformer-layer/_shared.md`, run
-`python scripts/build_prompts.py` — the phase prompts each carry an expanded
-copy so they stay self-contained when pasted into a session.
+## Commits
 
 Commit messages describe the change and match the existing history.

@@ -1,97 +1,56 @@
 # Prompts
 
-Three phases, one per stage of the optimization workflow. They are meant to be
-pasted into a fresh agent session, one at a time, and re-run with a higher bar
-rather than rewritten.
+The framework's main artifact. Three phases, one prompt each, pasted into a
+fresh agent session one at a time and re-run with a higher bar rather than
+rewritten. `docs/method.md` explains the phases; this directory holds the text.
 
 ```text
 prompts/
-  transformer-layer/
-    phase1.md   research, then one correct implementation
-    phase2.md   profiling-guided optimization
-    phase3.md   shape-group specialization
+  template/
+    _shared.md    the block every phase carries: the task, the acceptance rule,
+                  the shapes, the workflow requirements, the hardware
+    phase1.md     research, then one correct implementation
+    phase2.md     profiling-guided optimization
+    phase3.md     shape-group specialization
+workspace/<task>/prompts/
+    the same four files, filled in for that task
 ```
 
-## Where to run them
+## How a workspace gets its prompts
 
-**Not in this repository.** Create a separate implementation workspace and start
-the agent there, so the search history, the failed branches, and the scratch
-files do not contaminate the release tree:
+`scripts/new_workspace.sh <name>` copies `template/` into
+`workspace/<name>/prompts/`. Fill every `<<slot>>` in `_shared.md` and the
+task-specific slots in each phase, then from the repository root:
 
 ```bash
-mkdir -p workspaces
-git clone . workspaces/round-1     # or start from a bare directory
-cd workspaces/round-1
-export TECHJAM_BENCHMARK="$OLDPWD/bench/official/torch_transformer_benchmark.py"
+python scripts/build_prompts.py
 ```
 
-The harness reads `$TECHJAM_BENCHMARK`, so every workspace measures against the
-same file, and `md5` proves it.
+That expands `_shared.md` into each phase file between the
+`<!-- BEGIN shared -->` / `<!-- END shared -->` markers. Prompts are pasted
+into sessions as raw text, so each phase file has to be self-contained; the
+shared block is edited in one place and copied into three so the three stay
+in agreement. Re-run it after every edit to a `_shared.md`.
 
-## The loop
+`workspace/transformer-forward-opt/prompts/` is the filled-in example.
 
-1. Paste the phase prompt into a fresh session.
-2. Have the agent investigate first: the official script, the shape grid, the
-   profiler output, `KernelWiki`, public documentation.
-3. Require the plan draft in `docs/draft.md` **before** any implementation.
-4. `/humanize:gen-plan` turns the draft into a detailed plan.
-5. `/humanize:start-rlcr-loop` runs implement-and-review.
-6. Every performance-relevant commit goes into `benchmark.csv`; every candidate
-   goes into `solutions.jsonl` with a parent link; every major direction keeps
-   its NCU report.
+## Writing the slots
 
-## Three disciplines worth more than any single optimization
+The slots that decide whether the agent succeeds, in order of how expensive
+they are to get wrong:
 
-**Five iterations per direction, then move on.** If a direction cannot be
-implemented cleanly, fails correctness, or shows no credible path to improvement
-after five iterations, record the evidence and take the next-ranked direction.
-Over seventy-two hours this is the only thing standing between a search and a
-rabbit hole.
+1. **Hardware.** A prompt written for one card sends the agent chasing
+   features another card does not have. List what is there, list what is not,
+   and say what is out of scope by decision rather than capability.
+2. **The reference computation, exactly.** Op by op. Every site where a
+   reimplementation diverges silently -- a reduction in a wider dtype, masking
+   applied more than once, an approximation the reference does not make -- and
+   which of those are invisible at the evaluator's default flags. Human
+   knowledge the agent would otherwise have to pay for in iterations.
+3. **The acceptance rule**, quoted from the evaluator's source, with what it
+   rules out.
+4. **The development shapes**, each with the reason it is in the set.
+5. **The Phase 2 direction list.** A starting list the agent must rank, not
+   an ordering.
 
-**Rank before implementing.** The draft must list candidate directions, order
-them by expected benefit against implementation risk, and split each into
-concrete subtasks. Not whatever occurs to the agent next.
-
-**Never silently move the goalposts.** The target speedup is set by the human.
-The agent's job is to reach it or produce benchmark and profiling evidence for
-why this round cannot. It does not get to redefine the target or quietly swap
-the baseline for an easier one.
-
-## Raising the bar between rounds
-
-These prompts are starting points, not scripts. Re-invoke the same phase with a
-higher explicit target, a stricter validation requirement, or a tighter
-promotion rule. Write human knowledge directly into the prompt when you have it:
-
-- Which hardware features to try -- and which do not exist on this card.
-- Which bottlenecks you expect, from having read the profile yourself.
-- Which directions are known to be risky or unlikely to pay.
-- Which shapes matter most this round.
-
-## Shared requirements
-
-Unless a phase overrides them:
-
-- Pass the official correctness check at `--atol 0.001 --rtol 0.01`, the
-  stricter of the two readings in the script. Zero bad elements; non-finite
-  values fail outright.
-- Optimize median latency, and report p90 alongside it.
-- Any implementation the contest allows: PyTorch, `torch.compile`, Triton, CUDA
-  C++ extensions, CUDA Graphs.
-- Keep the official script unmodified. Substitute the candidate through
-  `odyssey official <candidate>`, which patches `UserOptimizedTransformer` at
-  runtime and calls the script's own `main()`.
-- Record everything. A dead end recorded on the day it died is evidence; the
-  same dead end reconstructed on the last night is a guess.
-
-## Phase semantics
-
-**Phase 1** -- research and one correct implementation. Speed matters less than
-a clean design that passes every shape, including the padded ones.
-
-**Phase 2** -- profiling-guided bottleneck analysis and iterative optimization.
-Repeatable with progressively higher explicit targets.
-
-**Phase 3** -- workload-shape analysis and per-group specialization. The problem
-statement announces the shape grid in advance, which makes this the phase the
-task was practically designed for.
+Keep the Workflow Requirements block as it is. It is the method.

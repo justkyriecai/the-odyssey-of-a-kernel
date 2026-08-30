@@ -1,10 +1,8 @@
 # Reference material — cloned, never committed.
 /ref/
 
-# Generated evidence. Every run writes here; nothing here is source.
-runs/
-outputs/
-profile/
+# Binary profiler dumps. They stay on the machine that made them (and get
+# synced to the laptop); commit the text export next to where it is cited.
 *.ncu-rep
 *.nsys-rep
 *.sqlite
@@ -19,7 +17,7 @@ build/
 dist/
 *.egg-info/
 # torch is deliberately unpinned: the right wheel depends on the CUDA
-# runtime of whichever box is rented that day. See docs/reproduction.md.
+# runtime of whichever box is rented that day.
 uv.lock
 
 # Editors / OS
@@ -28,6 +26,3 @@ uv.lock
 .codex/
 .idea/
 .vscode/
-
-# Agent search workspaces. The search happens here; the release tree stays clean.
-workspaces/

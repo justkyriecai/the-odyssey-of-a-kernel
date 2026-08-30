@@ -1,0 +1,6 @@
+[submodule "skills/KernelWiki"]
+	path = skills/KernelWiki
+	url = https://github.com/mit-han-lab/KernelWiki.git
+[submodule "skills/ncu-report-skill"]
+	path = skills/ncu-report-skill
+	url = https://github.com/mit-han-lab/ncu-report-skill.git

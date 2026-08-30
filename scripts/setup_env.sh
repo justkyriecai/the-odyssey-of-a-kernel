@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
-# Create the environment. Run once per machine, including a rented GPU box.
+# Create the Python environment. Run once per machine, including a rented box.
+#
+# There is no package to install: the framework is prompts, skills and rules,
+# and a workspace's `verify.py` runs straight from its directory. This only
+# has to produce a venv with a torch that matches the machine's CUDA runtime.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -19,7 +23,13 @@ if [[ -n "$TORCH_INDEX" ]]; then
   uv pip install --python .venv/bin/python --index-url "$TORCH_INDEX" torch
 fi
 uv pip install --python .venv/bin/python -r requirements.txt
-uv pip install --python .venv/bin/python -e .
 
 echo
-.venv/bin/python -m odyssey doctor
+.venv/bin/python - <<'PY'
+import sys, torch
+print(f"python {sys.version.split()[0]}   torch {torch.__version__}   cuda {torch.cuda.is_available()}")
+if torch.cuda.is_available():
+    for i in range(torch.cuda.device_count()):
+        p = torch.cuda.get_device_properties(i)
+        print(f"  [{i}] {p.name}  sm_{p.major}{p.minor}  {p.total_memory / 2**30:.1f} GiB")
+PY

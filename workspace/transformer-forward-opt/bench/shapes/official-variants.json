@@ -1,0 +1,122 @@
+{
+  "name": "official-variants",
+  "description": "The official geometries under the flags the problem statement leaves to the script: every runnable geometry with padding_ratio 0.4 (distinct -pad case names so calibration treats them as additional cases of the same dispatch group), and bf16/fp16 lanes on a representative spread. These rows are what makes the calibration's padded-and-dense guarantee a measurement instead of a shared-code-path argument.",
+  "defaults": {
+    "batch_size": 64,
+    "seq_len": 128,
+    "d_model": 128,
+    "num_heads": 4,
+    "ffn_dim": 128,
+    "num_layers": 4,
+    "causal": true,
+    "dtype": "float32",
+    "padding_ratio": 0.0,
+    "input_scale": 1.0
+  },
+  "cases": [
+    {
+      "name": "center-pad",
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "batch-1-pad",
+      "batch_size": 1,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "batch-4-pad",
+      "batch_size": 4,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "batch-16-pad",
+      "batch_size": 16,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "batch-128-pad",
+      "batch_size": 128,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "batch-10000-pad",
+      "batch_size": 10000,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "narrow-32-pad",
+      "d_model": 32,
+      "ffn_dim": 32,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "wide-1024-pad",
+      "d_model": 1024,
+      "ffn_dim": 1024,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "heads-1-pad",
+      "num_heads": 1,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "heads-2-pad",
+      "num_heads": 2,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "heads-16-pad",
+      "num_heads": 16,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "seq-32-pad",
+      "seq_len": 32,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "seq-1024-pad",
+      "seq_len": 1024,
+      "padding_ratio": 0.4
+    },
+    {
+      "name": "center-bf16",
+      "dtype": "bfloat16"
+    },
+    {
+      "name": "center-fp16",
+      "dtype": "float16"
+    },
+    {
+      "name": "batch-128-bf16",
+      "batch_size": 128,
+      "dtype": "bfloat16"
+    },
+    {
+      "name": "batch-128-fp16",
+      "batch_size": 128,
+      "dtype": "float16"
+    },
+    {
+      "name": "heads-16-bf16",
+      "num_heads": 16,
+      "dtype": "bfloat16"
+    },
+    {
+      "name": "heads-16-fp16",
+      "num_heads": 16,
+      "dtype": "float16"
+    },
+    {
+      "name": "seq-1024-bf16",
+      "seq_len": 1024,
+      "dtype": "bfloat16"
+    },
+    {
+      "name": "seq-1024-fp16",
+      "seq_len": 1024,
+      "dtype": "float16"
+    }
+  ]
+}

@@ -33,12 +33,15 @@ relative error. Under a zero-bad-element rule, one tail outlier is total failure
 ## 2. The script disagrees with itself about tolerance
 
 The module docstring says `atol=0.001, rtol=0.01`. The `argparse` defaults say
-`atol=0.002, rtol=0.02`. The problem statement agrees with `argparse`; the
-docstring looks like a leftover from an earlier revision.
+`atol=0.002, rtol=0.02`. The problem statement is explicit -- *"the diff should
+be small enough (relative error < 0.02, abs error < 0.002)"* -- so the defaults
+are the rule and the docstring is a leftover from an earlier revision.
 
-We do not get to know which the organizers will run. Everything here targets the
-stricter pair, because a candidate that clears `0.001 / 0.01` clears both, and
-the cost of the extra margin is small next to the cost of being wrong about it.
+Everything here targets `0.002 / 0.02`, passed explicitly rather than inherited,
+so a recorded row states the tolerance it was judged at. An earlier revision of
+this workspace targeted the docstring's stricter pair as insurance against not
+knowing; that is no longer a live question, and the extra margin was
+optimization headroom given away for nothing.
 
 ## 3. The baseline is stronger than "naive fp32"
 

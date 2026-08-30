@@ -3,7 +3,7 @@
 #
 # The pitch hands the panel the shape list and says "pick one". This script is
 # what runs next: the organizer's own script, unmodified, with the shipping
-# candidate patched in, at the strict tolerance -- PASS per trial, max_abs and
+# candidate patched in, at the problem statement's tolerance -- PASS per trial, max_abs and
 # max_rel on screen, both medians side by side.
 #
 #   ./scripts/demo.sh              list the shapes for the panel to choose from
@@ -36,4 +36,4 @@ fi
 
 CASE="$1"; shift
 exec "$PY" "$WS/verify.py" "$CANDIDATE" --shapes "$SHAPES" --case "$CASE" -- \
-  --atol 0.001 --rtol 0.01 "$@"
+  --atol 0.002 --rtol 0.02 "$@"

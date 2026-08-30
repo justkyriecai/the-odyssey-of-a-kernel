@@ -10,18 +10,21 @@ with a record of what you chose *not* to do and why.
 
 ## What the budget actually is
 
-Effective tolerance per element, at the strict pair `atol=0.001, rtol=0.01`:
+Effective tolerance per element, at the problem statement's pair
+`atol=0.002, rtol=0.02`:
 
 | `\|ref\|` | Binding term | Room |
 |---:|---|---:|
-| 10 | `rtol` | 0.1 |
-| 1 | `rtol` | 0.01 |
-| 0.1 | `atol` | 0.001 |
-| 0.01 | `atol` | 0.001 |
-| ~0 | `atol` | 0.001 |
+| 10 | `rtol` | 0.2 |
+| 1 | `rtol` | 0.02 |
+| 0.1 | `atol` | 0.002 |
+| 0.01 | `atol` | 0.002 |
+| ~0 | `atol` | 0.002 |
 
-Above `|ref| = 0.1` the relative term is generous. Below it, everything falls
-back to `atol = 0.001` and the budget is flat. **The scarce resource is
+The crossover sits at `|ref| = atol/rtol = 0.1`, where it also sat under the
+docstring's stricter pair -- both terms doubled, so only the amount of room
+changed, not its shape. Above 0.1 the relative term is generous. Below it,
+everything falls back to `atol = 0.002` and the budget is flat. **The scarce resource is
 absolute error on small-magnitude outputs**, which is exactly where a
 LayerNorm-heavy Pre-LN stack puts a lot of its values.
 
@@ -50,7 +53,7 @@ reference implementation makes the same call, which is a hint worth taking.
 Measured, on CPU with bf16: handing q/k/v to `scaled_dot_product_attention`
 instead of reproducing the fp32 softmax costs ~2e-3 of absolute error *per
 layer*. Six layers of residual accumulation later, `max_abs` is 0.031 against an
-`atol` of 0.001, and the run fails. The fused-QKV projection, by contrast, is
+`atol` of 0.002, and the run fails -- the doubling does not rescue it. The fused-QKV projection, by contrast, is
 bit-identical -- the error is entirely the softmax. That is why `fused-safe` and
 `fused-sdpa` are separate named candidates rather than one implementation with a
 flag: on hardware where the fused backends *do* accumulate in fp32, `fused-sdpa`
@@ -59,10 +62,13 @@ should win, and where they do not it is not admitted at all.
 **LayerNorm stays in fp32.** Same reasoning: the mean and variance reductions
 are exactly where reduced precision does the most damage per FLOP saved.
 
-**GELU stays exact.** `approximate="none"`. The tanh approximation is worth a
-few percent of the FFN's time and about 1e-3 of relative error, which is inside
-`rtol` for large values and *outside* `atol` for small ones. Not available under
-this rule.
+**GELU stays exact, pending a measurement.** `approximate="none"`. The tanh
+approximation is worth a few percent of the FFN's time and about 1e-3 of
+relative error. Against the docstring's `atol = 0.001` that was outside the
+budget for small-magnitude outputs and the answer was simply no. At the problem
+statement's `atol = 0.002` it is no longer a foregone conclusion, and this
+document is not the place to guess: it is a named candidate and a measured
+`max_abs`, or it stays exact.
 
 ## The table to fill in
 
@@ -72,7 +78,7 @@ records the `atol` and `rtol` each row was judged against, read off the
 script's own `criterion:` line.
 
 ```bash
-python verify.py fused-safe fused-sdpa graph-safe graph-sdpa --shapes official --record -- --atol 0.001 --rtol 0.01
+python verify.py fused-safe fused-sdpa graph-safe graph-sdpa --shapes official --record -- --atol 0.002 --rtol 0.02
 python - <<'PY'
 import csv
 rows = list(csv.DictReader(open("runs/benchmark.csv")))

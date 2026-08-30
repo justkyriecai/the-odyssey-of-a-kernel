@@ -22,13 +22,14 @@ export TECHJAM_BENCHMARK=/path/to/torch_transformer_benchmark.py
 
 ## Two things to know before trusting a number
 
-**1. The script contradicts itself on tolerance.** The module docstring says
-`atol=0.001, rtol=0.01`; the `argparse` defaults say `atol=0.002, rtol=0.02`.
-The problem statement agrees with `argparse`. We do not know which the
-organizers will run, so this workspace targets the *stricter* pair -- a
-candidate that clears `0.001 / 0.01` clears both. `verify.py` hands the script
-its own defaults unless told otherwise; `scripts/smoke.sh`, `scripts/demo.sh`
-and `scripts/run_ladder.sh` all pass `-- --atol 0.001 --rtol 0.01`.
+**1. The script contradicts itself on tolerance, and the problem statement
+settles it.** The module docstring says `atol=0.001, rtol=0.01`; the `argparse`
+defaults say `atol=0.002, rtol=0.02`. The statement says *"the diff should be
+small enough (relative error < 0.02, abs error < 0.002)"*, so the defaults are
+the rule and the docstring is a leftover. `scripts/smoke.sh`, `scripts/demo.sh`
+and `scripts/run_ladder.sh` all pass `-- --atol 0.002 --rtol 0.02` -- the same
+values, passed explicitly so that every row in `runs/benchmark.csv` records the
+tolerance it was judged at rather than inheriting a default that could move.
 
 **2. The correctness rule is an OR, not a sum.** From `compare_outputs`:
 

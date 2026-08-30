@@ -18,7 +18,10 @@ WS="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ROOT="$(cd "$WS/../.." && pwd)"
 PY="${PY:-$ROOT/.venv/bin/python}"
 SHAPES="${SHAPES:-dev}"
-STRICT=(--atol 0.001 --rtol 0.01)
+# The problem statement's numbers: "relative error < 0.02, abs error <
+# 0.002". They are also the script's argparse defaults; passed explicitly so
+# every recorded row carries the tolerance it was judged at.
+TOLERANCE=(--atol 0.002 --rtol 0.02)
 
 CANDIDATES=("$@")
 if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
@@ -26,8 +29,8 @@ if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
 fi
 
 "$PY" "$WS/verify.py" "${CANDIDATES[@]}" --shapes "$SHAPES" --quiet --record --notes "ladder L0" -- \
-  "${STRICT[@]}"
+  "${TOLERANCE[@]}"
 "$PY" "$WS/verify.py" "${CANDIDATES[@]}" --shapes "$SHAPES" --quiet --record --notes "ladder L2" -- \
-  "${STRICT[@]}" --compile-baseline --compile-mode max-autotune
+  "${TOLERANCE[@]}" --compile-baseline --compile-mode max-autotune
 "$PY" "$WS/verify.py" passthrough --shapes "$SHAPES" --quiet --record --notes "ladder compile-only" -- \
-  "${STRICT[@]}" --compile-baseline --compile-mode max-autotune
+  "${TOLERANCE[@]}" --compile-baseline --compile-mode max-autotune

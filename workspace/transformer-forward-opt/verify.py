@@ -2,7 +2,7 @@
 """Run the organizer's benchmark script, unmodified, with a candidate patched in.
 
     python verify.py fused-safe --shapes dev
-    python verify.py fused-safe --shapes official --case center -- --atol 0.001 --rtol 0.01
+    python verify.py fused-safe --shapes official --case center -- --atol 0.002 --rtol 0.02
     python verify.py fused-safe fused-sdpa --shapes dev -- --compile-baseline --compile-mode max-autotune
     python verify.py --list
 
@@ -260,7 +260,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     parser = argparse.ArgumentParser(
         description="the organizer's script, unmodified, with a candidate patched in",
-        epilog="flags after `--` go to the script verbatim (e.g. -- --atol 0.001 --rtol 0.01)",
+        epilog="flags after `--` go to the script verbatim (e.g. -- --atol 0.002 --rtol 0.02)",
     )
     parser.add_argument("candidates", nargs="*", help="candidate names from kernels/")
     parser.add_argument("--shapes", default="dev", help="shape set name or path (default: dev)")

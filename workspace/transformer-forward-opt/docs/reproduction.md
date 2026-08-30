@@ -100,8 +100,8 @@ python verify.py --list                       # candidates, shape sets, the scri
 # The opponent, before writing anything: eager, then torch.compile max-autotune
 ./scripts/run_ladder.sh
 
-# A recorded sweep of every specialization over the official grid, strict tolerance
-python verify.py fused-safe fused-sdpa graph-safe graph-sdpa --shapes official --record -- --atol 0.001 --rtol 0.01
+# A recorded sweep of every specialization over the official grid
+python verify.py fused-safe fused-sdpa graph-safe graph-sdpa --shapes official --record -- --atol 0.002 --rtol 0.02
 
 # The dispatch table from what was recorded
 python kernels/dispatch.py calibrate
@@ -115,8 +115,8 @@ throwaway runs.
 
 ## The gate
 
-The gate is the organizer's own script, run unmodified, at the strict
-tolerance, with the shipping candidate patched in:
+The gate is the organizer's own script, run unmodified, at the problem
+statement's tolerance, with the shipping candidate patched in:
 
 ```bash
 ./scripts/demo.sh center

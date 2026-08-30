@@ -27,5 +27,5 @@ if [[ ${#CANDIDATES[@]} -eq 0 ]]; then
 fi
 
 exec "$PY" "$WS/verify.py" "${CANDIDATES[@]}" --shapes smoke --quiet -- \
-  --device cpu --atol 0.001 --rtol 0.01 \
+  --device cpu --atol 0.002 --rtol 0.02 \
   --accuracy-trials 3 --warmup 2 --repeats 8 --benchmark-rounds 1

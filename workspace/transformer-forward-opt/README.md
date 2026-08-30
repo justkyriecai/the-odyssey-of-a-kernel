@@ -61,12 +61,13 @@ python verify.py --list                              # candidates, shape sets, t
 python verify.py fused-safe --shapes dev --record    # a sweep, the script's own numbers, recorded
 ./scripts/run_ladder.sh                              # eager, then torch.compile max-autotune as the baseline
 python kernels/dispatch.py calibrate                 # the dispatch table from runs/benchmark.csv
-./scripts/demo.sh center                             # the official script, strict tolerance, exit 0 or 2
+./scripts/demo.sh center                             # the official script, official tolerance, exit 0 or 2
 ```
 
-Flags after `--` go to the organizer's script verbatim; `--atol 0.001 --rtol
-0.01` is the strict pair this workspace targets, `--compile-baseline
---compile-mode max-autotune` turns its baseline into the real opponent.
+Flags after `--` go to the organizer's script verbatim; `--atol 0.002 --rtol
+0.02` is the problem statement's rule and what this workspace targets,
+`--compile-baseline --compile-mode max-autotune` turns its baseline into the
+opponent worth quoting against.
 
 ## Running the agent
 

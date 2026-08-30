@@ -70,13 +70,14 @@ abs(user - ref) <= atol   OR   abs(user - ref) <= rtol * abs(ref)
 An OR, not a sum -- the effective tolerance is `max(atol, rtol*|ref|)`, tighter
 than `torch.isclose`. **Zero bad elements**, and any non-finite value fails.
 
-The script's docstring says `0.001 / 0.01`; its argparse defaults say
-`0.002 / 0.02`. Target the stricter pair, which clears either reading.
+The problem statement sets the numbers: *"relative error < 0.02, abs error <
+0.002"*. That is what the argparse defaults already are; the docstring's
+`0.001 / 0.01` is a leftover from an earlier revision. Target `0.002 / 0.02`.
 
 Run the gate through the organizer's own `main()`:
 
 ```bash
-python verify.py <candidate> --shapes dev --case center -- --atol 0.001 --rtol 0.01
+python verify.py <candidate> --shapes dev --case center -- --atol 0.002 --rtol 0.02
 ```
 
 ## Development shapes

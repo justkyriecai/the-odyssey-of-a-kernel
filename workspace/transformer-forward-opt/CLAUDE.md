@@ -16,9 +16,11 @@ anything that measures.
   `UserOptimizedTransformer` at runtime and calls the script's own `main()`.
   If a number anywhere disagrees with the script's own output, the script is
   right.
-- **Target `--atol 0.001 --rtol 0.01`**, the stricter of the two readings in the
-  script (its argparse defaults are `0.002 / 0.02`; `verify.py` passes the
-  script's defaults unless you say otherwise, so say otherwise). Zero bad
+- **Target `--atol 0.002 --rtol 0.02`** -- the problem statement's own numbers
+  ("relative error < 0.02, abs error < 0.002"), which are also the script's
+  argparse defaults. The script's docstring says `0.001 / 0.01`; it is a
+  leftover from an earlier revision and is not the rule. The scripts pass the
+  pair explicitly so every recorded row carries what it was judged at. Zero bad
   elements; non-finite values fail outright.
 - Work here. The search, its dead ends and its evidence all belong in this
   directory; `runs/` is committed.

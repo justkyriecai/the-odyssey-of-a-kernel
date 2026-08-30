@@ -2,8 +2,10 @@
 # D0 gate. If any of this fails, fix it before writing a single kernel --
 # discovering a broken profiler on day two costs a day.
 #
-#   ./scripts/check_gpu.sh                      driver, torch, ncu permission, then the
-#                                               workspace's own smoke test if there is one workspace
+#   ./scripts/check_gpu.sh                      driver, torch, whether counters are
+#                                               permitted, what profiling is left if they
+#                                               are not, then the workspace's own smoke
+#                                               test if there is one workspace
 #   ./scripts/check_gpu.sh <workspace-name>     the same, naming the workspace
 set -uo pipefail
 
@@ -35,16 +37,60 @@ else:
     raise SystemExit(1)
 PY
 
-step "Nsight Compute"
+step "Nsight Compute (hardware counters)"
+# Counters are one profiling path; the CUPTI activity/timeline path that nsys
+# and torch.profiler use is another, and the gates below do not close it. A pod
+# without counters is workable -- a pod without either is not.
+counters=0
 if command -v ncu >/dev/null 2>&1; then
   ncu --version | head -3
   echo "-- permission probe (needs CAP_SYS_ADMIN or nvidia NVreg_RestrictProfilingToAdminUsers=0)"
-  ncu --metrics sm__cycles_elapsed.avg --target-processes all \
-      "$PY" -c "import torch; torch.zeros(8, device='cuda').sum().item()" >/dev/null 2>&1 \
-    && echo "   profiling permitted" \
-    || { echo "   PROFILING DENIED -- fix this on D0, not D2"; status=1; }
+  if ncu --metrics sm__cycles_elapsed.avg --target-processes all \
+        "$PY" -c "import torch; torch.zeros(8, device='cuda').sum().item()" >/dev/null 2>&1; then
+    echo "   profiling permitted"
+    counters=1
+  else
+    echo "   COUNTERS DENIED -- diagnosing which gate, both are outside this container:"
+    grep -H RmProfilingAdminOnly /proc/driver/nvidia/params 2>/dev/null \
+      | sed 's/^/     /' || echo "     (host driver params not readable)"
+    grep -H CapEff /proc/self/status 2>/dev/null | sed 's/^/     /'
+    echo "     1 and no CAP_SYS_ADMIN means the platform refuses counters on every"
+    echo "     card it rents. Do not retry; use the fallback below."
+  fi
 else
-  echo "ncu not found. Install the CUDA toolkit or Nsight Compute."; status=1
+  echo "ncu not found. Install the CUDA toolkit or Nsight Compute."
+fi
+
+step "profiling fallback (CUPTI timeline)"
+if [[ $counters -eq 1 ]]; then
+  echo "not needed -- counters are available"
+  command -v nsys >/dev/null 2>&1 && echo "nsys also present: $(nsys --version | head -1)"
+else
+  if "$PY" - <<'PY' >/dev/null 2>&1; then
+import torch
+from torch.profiler import profile, ProfilerActivity
+a = torch.randn(256, 256, device="cuda")
+a @ a
+torch.cuda.synchronize()
+with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA]) as p:
+    a @ a
+    torch.cuda.synchronize()
+raise SystemExit(0 if any(e.self_device_time_total for e in p.key_averages()) else 1)
+PY
+    echo "   torch.profiler: CUDA timeline works -- the activity API is open"
+  else
+    echo "   torch.profiler: no CUDA timeline either. No profiling path on this pod."
+    status=1
+  fi
+  if command -v nsys >/dev/null 2>&1; then
+    echo "   nsys: $(nsys --version | head -1)"
+  else
+    echo "   nsys: not installed. It gives the kernel gaps torch.profiler does not:"
+    echo "     apt-get update && apt-get install -y cuda-nsight-systems-<cuda-version>"
+    echo "     (container overlay only -- put it in the workspace's infra/ bootstrap)"
+  fi
+  echo "   See odyssey-ncu-report reference/10-no-counter-fallback.md for what this"
+  echo "   path answers and what it cannot (occupancy, stalls, measured roofline)."
 fi
 
 step "clock locking"

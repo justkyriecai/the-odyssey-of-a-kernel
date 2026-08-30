@@ -64,10 +64,14 @@ iterated on: too slow, needs a bigger card, needs a chunked reference.>>
   `max_abs_error`, `decision` (`keep` / `reject` / `park`), `evidence` (a
   path, a commit, a run), `notes`, `timestamp`. Rejected branches included --
   especially rejected branches.
-- Keep an NCU report per major direction under `runs/profile/<direction>/`,
-  with a text export next to the binary.
+- Keep a profile per major direction under `runs/profile/<direction>/`, with a
+  text export next to the binary dump. NCU when counters are available; when
+  they are not -- `ERR_NVGPUCTRPERM` is the normal case on a rented pod -- an
+  `nsys` timeline or a `torch.profiler` table, with the report saying which
+  instrument produced it and what is therefore not measured. See
+  `odyssey-ncu-report`.
 - At most five iterations per direction. Then record the evidence and move on.
-- Use `KernelWiki` for kernel research and `ncu-report-skill` for reading
+- Use `odyssey-kernelwiki` for kernel research and `odyssey-ncu-report` for reading
   profiles.
 - Do not modify the evaluator. Do not tune against a single shape and report
   it as a general result. Do not report a best-of run; report the median, with

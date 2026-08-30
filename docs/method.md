@@ -35,14 +35,15 @@ unrelated operator through the same three phases.
 
 1. Paste the phase prompt into a fresh agent session started in the workspace.
 2. The agent investigates first: the evaluator, the shape grid, the profiler
-   output, `KernelWiki`, public documentation.
+   output, `odyssey-kernelwiki`, public documentation.
 3. It writes the plan draft to `docs/draft.md` **before** any implementation.
 4. `/humanize:gen-plan` turns the draft into a detailed plan.
 5. `/humanize:start-rlcr-loop` runs implement-and-review until the plan is
    done or the evidence says it cannot be.
 6. Every measurement goes into `runs/benchmark.csv`; every candidate into
    `runs/solutions.jsonl` with a parent link; every major direction keeps its
-   NCU report.
+   profile -- NCU where the machine permits counters, an `nsys` timeline where
+   it does not.
 
 The ablation HAN Lab ran after their contest is the reason the loop is the
 centre of the method: on a sparse-attention indexer, the plan/execute/verify

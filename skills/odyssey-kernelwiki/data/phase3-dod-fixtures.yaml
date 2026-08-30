@@ -1,0 +1,84 @@
+## Phase 3 Definition-of-Done fixtures (AC-7 contract, version 3)
+## Consumed by scripts/check_dod_fixtures.py
+##
+## Per-glob semantics (Round 2+):
+##   - Every required_assets glob must match at least one file INDEPENDENTLY.
+##   - The line-count floor, per-file mode, bundle-level asset_mode, and
+##     content regex gates are applied per glob (not over the union) where
+##     applicable.
+##
+## Each fixture also encodes the plan's intended evidence strength:
+##   - required_min_lines         : absolute line-count floor
+##   - required_provenance_modes  : allowed per-file mode set (files[*].mode
+##                                  in the file's bundle PROVENANCE.yaml)
+##   - required_bundle_asset_mode : allowed bundle-level asset_mode (top-level
+##                                  PROVENANCE.yaml asset_mode) — distinct
+##                                  from per-file mode so a fixture can demand
+##                                  "at least one verbatim bundle" for a given
+##                                  glob
+##   - required_content_patterns  : case-insensitive regex set applied across
+##                                  the combined matched set
+
+contract_version: 3
+
+## Stable identity roster. An active contract may leave `fixtures:` only by
+## moving the same id to `retired_fixtures:` with a complete tombstone.
+## The checker pins the exact version-3 roster independently and compares it
+## to both sections, so deleting an entry and its roster row cannot pass.
+fixture_roster:
+  blackwell-warp-specialization: active
+  deepgemm-nc128-promotion: active
+  cutlass-sm100-clc: active
+  nvfp4-batched-gemv: retired
+  flashattention4-software-exp: retired
+
+fixtures:
+
+  - id: blackwell-warp-specialization
+    question: "How is warp specialization structured on Blackwell (producer / consumer / epilogue)?"
+    required_assets:
+      - "artifacts/kernels/warp-specialization/full/sm100_fmha_fwd_mainloop_tma_warpspecialized.hpp"
+    required_min_lines: 500
+    required_provenance_modes: [verbatim]
+    required_bundle_asset_mode: [verbatim]
+    required_content_patterns:
+      - "pipeline|mbarrier|producer|consumer"
+
+  - id: deepgemm-nc128-promotion
+    question: "How does DeepGEMM do Nc=128 CUDA-core promotion for FP8 accumulation?"
+    required_assets:
+      - "artifacts/kernels/deepgemm/full/sm90_fp8_gemm_1d1d.cuh"
+    required_min_lines: 200
+    required_provenance_modes: [verbatim]
+    required_bundle_asset_mode: [verbatim]
+    required_content_patterns:
+      - "wgmma|promote|cuda.?core"
+
+  - id: cutlass-sm100-clc
+    question: "How does CUTLASS configure PersistentScheduler + CLC (Cluster Launch Control) on SM100?"
+    required_assets:
+      - "artifacts/prs/cutlass/PR-2161/diff.patch"
+      - "artifacts/prs/cutlass/PR-2161/key-files/**/*"
+    required_min_lines: 40
+    required_provenance_modes: [verbatim, upstream-patch]
+    required_bundle_asset_mode: [verbatim]
+    required_content_patterns:
+      - "grid_dependency_control|GDC|griddepcontrol"
+
+
+retired_fixtures:
+  - id: nvfp4-batched-gemv
+    question: "How do I write an NVFP4 batched GEMV on B200?"
+    retired_at: '2026-08-19'
+    reason: The former full-kernel and contest-progression assets were removed after provenance review found that they were not source-true; no unrelated retained GEMM file is an honest substitute for this GEMV contract.
+    former_required_assets:
+      - artifacts/kernels/nvfp4-gemv/full/nvfp4_scaled_mm_kernels.cu
+      - artifacts/contests/gpu-mode-nvfp4/problem-1-gemv/submissions/rank-2-yue/*.cpp
+
+  - id: flashattention4-software-exp
+    question: "How does FlashAttention-4 implement software-emulated exponential and softmax rescaling?"
+    retired_at: '2026-08-19'
+    reason: The former kernel and blog-code assets were removed after provenance review found that they were not source-true; the retained FlashAttention PR assets do not implement this exact FA4 software-exp example.
+    former_required_assets:
+      - artifacts/kernels/flash-attention-4/full/sm100_fmha_bwd_mla_kernel_tma_warpspecialized.hpp
+      - artifacts/blogs/flash-attention-4/code/01-software-exp-cody-waite-horner.cu

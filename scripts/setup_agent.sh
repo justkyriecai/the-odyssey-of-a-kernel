@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# Install the agent workflow: the plan/execute/verify harness and the two
-# research skills. Nothing here knows what operator is being optimized -- this
-# is the method's toolchain, and it is the same for every workspace.
+# Install the agent workflow: the plan/execute/verify harness and this
+# repository's skills. Nothing here knows what operator is being optimized --
+# this is the method's toolchain, and it is the same for every workspace.
+#
+# The skills are installed **project-scoped**, into <repo>/.claude/skills/, so
+# two checkouts on one machine stay independent and nothing in $HOME is
+# rewritten. `humanize` is the exception: the CLI only installs plugins at user
+# scope.
 #
 # Run it on the rented box, inside tmux, before pasting a phase prompt. The
 # first ten minutes of a pod are the most expensive ten minutes of the project;
 # a manual checklist is where they go.
 #
-# Idempotent: re-running updates rather than duplicating.
+# Idempotent: re-running relinks and updates rather than duplicating.
 set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SKILLS_DIR="${SKILLS_DIR:-$HOME/.claude/skills}"
-SKILL_ORG="${SKILL_ORG:-mit-han-lab}"   # DongyunZou also hosts both mirrors
+SKILLS_DIR="${SKILLS_DIR:-$ROOT_DIR/.claude/skills}"
 status=0
 
 step() { printf '\n=== %s ===\n' "$1"; }
@@ -44,52 +48,47 @@ else
   fi
 fi
 
-step "research skills"
-# The release tree links both as submodules under skills/ so they are visible
-# next to the prompts that cite them. A checked-out submodule is linked into
-# place; otherwise the skill is cloned directly.
+step "skills -> $SKILLS_DIR"
+# The skills are maintained in skills/, next to the prompts that cite them, and
+# linked into the project so Claude Code loads them. Editing skills/ edits what
+# the session sees; there is no second copy to drift.
 mkdir -p "$SKILLS_DIR"
-for skill in KernelWiki ncu-report-skill; do
-  target="$SKILLS_DIR/$skill"
-  vendored="$ROOT_DIR/skills/$skill"
-  if [[ -f "$vendored/SKILL.md" ]]; then
-    if [[ -L "$target" || ! -e "$target" ]]; then
-      ln -sfn "$vendored" "$target" && ok "$skill -> linked from skills/ (submodule)"
-    else
-      ok "$skill already present at $target (not touched)"
-    fi
-  elif [[ -d "$target/.git" ]]; then
-    git -C "$target" pull --quiet --ff-only 2>/dev/null \
-      && ok "$skill up to date" \
-      || ok "$skill present (pull skipped)"
-  elif [[ -e "$target" ]]; then
-    bad "$target exists but is neither a symlink nor a clone -- move it aside and re-run"
+found=0
+for vendored in "$ROOT_DIR"/skills/*/; do
+  [[ -f "$vendored/SKILL.md" ]] || continue
+  found=$((found + 1))
+  name="$(basename "$vendored")"
+  target="$SKILLS_DIR/$name"
+  declared="$(sed -n 's/^name: *//p' "$vendored/SKILL.md" | head -1)"
+  if [[ -n "$declared" && "$declared" != "$name" ]]; then
+    bad "$name: SKILL.md declares name '$declared' -- rename one so they agree"
+  fi
+  if [[ -L "$target" || ! -e "$target" ]]; then
+    ln -sfn "${vendored%/}" "$target" && ok "$name linked"
   else
-    if git clone --quiet --depth 1 \
-        "https://github.com/$SKILL_ORG/$skill.git" "$target" 2>/dev/null; then
-      ok "$skill cloned (submodules not initialised; that is fine)"
-    else
-      bad "$skill clone failed from $SKILL_ORG"
-    fi
+    bad "$target exists and is not a symlink -- move it aside and re-run"
   fi
 done
+[[ $found -gt 0 ]] || bad "no skills found under $ROOT_DIR/skills/"
 
 step "verify"
 claude plugin list 2>/dev/null | grep -i humanize \
   && ok "humanize visible" \
   || bad "humanize not visible to the CLI"
-for skill in KernelWiki ncu-report-skill; do
-  if [[ -f "$SKILLS_DIR/$skill/SKILL.md" ]]; then
-    ok "$skill: SKILL.md found"
+for target in "$SKILLS_DIR"/*/; do
+  name="$(basename "$target")"
+  if [[ -f "$target/SKILL.md" ]]; then
+    ok "$name: SKILL.md found"
   else
-    bad "$skill: no SKILL.md at $SKILLS_DIR/$skill -- the skill will not load"
+    bad "$name: no SKILL.md at $target -- the skill will not load"
   fi
 done
 
 printf '\n=== %s ===\n' "$([[ $status -eq 0 ]] && echo READY || echo NOT READY)"
 [[ $status -eq 0 ]] && cat <<'EOF'
 
-Restart the Claude Code session so the plugin and skills load. Then, from a
-workspace directory, paste prompts/phase1.md into a fresh session.
+Restart the Claude Code session so the plugin and skills load. Then run
+odyssey-create-workspace to start a task, or, from an existing workspace
+directory, paste prompts/phase1.md into a fresh session.
 EOF
 exit $status

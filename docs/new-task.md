@@ -6,13 +6,13 @@ the machine it runs on, and the evidence. Nothing outside it knows the task
 exists.
 
 ```bash
-./scripts/new_workspace.sh my-op
+./scripts/new_workspace.sh my-op-h100-20260830
 ```
 
 creates:
 
 ```text
-workspace/my-op/
+workspace/my-op-h100-20260830/
   README.md            the checklist below, as a file
   verify.py            copied from the first workspace; three parts to adapt
   bench/official/      the evaluator goes here, unmodified, with its md5
@@ -24,6 +24,39 @@ workspace/my-op/
   runs/                benchmark.csv, solutions.jsonl, profile/, dispatch tables
   infra/               how to get a machine for this task
 ```
+
+Name a workspace `<task>-<gpu>-<date>`. The card is in the name because the
+hardware section of `prompts/_shared.md` is the first thing to rewrite when the
+card changes and the most expensive to get wrong: when it changes, the
+workspace changes too, and the old one stays as evidence rather than being
+edited into a lie.
+
+The `odyssey-create-workspace` skill does all of this from a task description
+plus the card, and fills in whatever the description already answers -- the
+workspace `CLAUDE.md` and the matching slots in `prompts/_shared.md`. The
+checklist below is what is left either way.
+
+## The same task on another card
+
+A workspace is card-specific: the hardware section of `prompts/_shared.md` is
+written for one card, and every number in `runs/` was measured on one. So when
+the machine changes, the workspace changes too.
+
+```bash
+./scripts/new_workspace.sh my-op-b200-20260912 --from my-op-h100-20260830
+```
+
+carries over what belongs to the task -- `bench/`, `kernels/`, `verify.py`,
+`docs/`, `scripts/`, `infra/`, the prompts -- and deliberately not `runs/`,
+which starts empty. The old workspace is not edited and not deleted; it is the
+evidence for what happened on that card, and it stays readable as such.
+
+What has to be redone on arrival, in order: the hardware section of
+`_shared.md` (then `build_prompts.py`), this round's target, the `passthrough`
+control reading ~1.00x, and a re-measurement of the baseline and of every
+candidate you intend to build on. A candidate arrived because it won on another
+card. That is a hypothesis about this one -- tile sizes, launch bounds and
+occupancy assumptions rarely survive a change of card.
 
 ## The checklist
 

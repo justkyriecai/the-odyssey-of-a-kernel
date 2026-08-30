@@ -1,0 +1,1236 @@
+repo: NVIDIA/cutlass
+searched_at: '2026-05-20'
+keywords_used:
+- blackwell
+- sm100
+- sm_100
+- tcgen05
+- tmem
+- nvfp4
+- fp4
+- mxfp4
+- block_scale
+- 2sm
+- cta_group
+- clc
+- cluster_launch
+- umma
+- persistent
+- warp_special
+- fmha
+- mla
+- epilogue
+- tile_scheduler
+- grouped_gemm
+- sub_byte
+total_candidates: 79
+included: 39
+excluded: 16
+deferred: 24
+prs:
+- number: 2033
+  title: '[EVT] Add support for Row/Col broadcast PtrArray'
+  date: '2025-01-08'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cutlass/epilogue/fusion/sm90_visitor_load_tma_warpspecialized.hpp'
+  files_changed:
+  - include/cutlass/epilogue/fusion/sm90_visitor_load_tma_warpspecialized.hpp
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2037
+  title: Groupwise scaling along M for FP8 gemm
+  date: '2025-01-13'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling.cu, examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu'
+  files_changed:
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling.cu
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu
+  files_reviewed_count: 8
+  scope_disposition: retained
+- number: 2110
+  title: Treat negative zero as equivalent to positive zero in sm90_sparse_gemm_compressor.hpp
+  date: '2025-02-13'
+  decision: exclude
+  reason: SM90 sparse GEMM compressor fix, not Blackwell-specific
+  files_changed: []
+- number: 2130
+  title: Flash MLA support
+  date: '2025-02-24'
+  decision: include
+  reason: 'retain: added device-code construct in: examples/68_hopper_flash_mla/flash_fwd_mla_kernel.h, examples/68_hopper_flash_mla/softmax.h, examples/68_hopper_flash_mla/utils.h'
+  files_changed:
+  - examples/68_hopper_flash_mla/flash_fwd_mla_kernel.h
+  - examples/68_hopper_flash_mla/softmax.h
+  - examples/68_hopper_flash_mla/utils.h
+  files_reviewed_count: 9
+  scope_disposition: retained
+- number: 2134
+  title: Flash MLA Support - Step 2
+  date: '2025-02-26'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/68_hopper_flash_mla/68_hopper_flash_mla.cu'
+  files_changed:
+  - examples/68_hopper_flash_mla/68_hopper_flash_mla.cu
+  files_reviewed_count: 5
+  scope_disposition: retained
+- number: 2139
+  title: Blockwise and Groupwise GEMM for Blackwell and Improvements for Hopper
+  date: '2025-02-26'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling.cu, examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu,
+    examples/68_hopper_fp8_warp_specialized_grouped_gemm_with_blockwise_scaling/68_hopper_fp8_warp_specialized_grouped_gemm_with_blockwise_scaling.cu, examples/81_blackwell_gemm_blockwise/81_blackwell_gemm_blockwise.cu,
+    examples/81_blackwell_gemm_blockwise/81_blackwell_gemm_groupwise.cu'
+  files_changed:
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling.cu
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu
+  - examples/68_hopper_fp8_warp_specialized_grouped_gemm_with_blockwise_scaling/68_hopper_fp8_warp_specialized_grouped_gemm_with_blockwise_scaling.cu
+  - examples/81_blackwell_gemm_blockwise/81_blackwell_gemm_blockwise.cu
+  - examples/81_blackwell_gemm_blockwise/81_blackwell_gemm_groupwise.cu
+  files_reviewed_count: 28
+  scope_disposition: retained
+- number: 2143
+  title: Add Blackwell to the list of architectures in quickstart.md
+  date: '2025-02-28'
+  decision: exclude
+  reason: documentation-only update to quickstart.md
+  files_changed: []
+- number: 2161
+  title: Blockwise Improvement and Programmatic Dependent Launch
+  date: '2025-03-10'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cutlass/arch/grid_dependency_control.h, include/cutlass/gemm/collective/sm100_mma_warpspecialized_blockwise_scaling.hpp'
+  files_changed:
+  - include/cutlass/arch/grid_dependency_control.h
+  - include/cutlass/gemm/collective/sm100_mma_warpspecialized_blockwise_scaling.hpp
+  files_reviewed_count: 3
+  scope_disposition: retained
+- number: 2167
+  title: Fix sm100 gemm wrong static constexpr that breaks compilation on Windows
+  date: '2025-03-13'
+  decision: exclude
+  reason: 'remove: no positive device-kernel implementation in 3 authoritative changed file(s)'
+  files_changed:
+  - include/cutlass/gemm/kernel/sm100_gemm_array_tma_warpspecialized.hpp
+  - include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized.hpp
+  - include/cutlass/gemm/kernel/sm100_gemm_tma_warpspecialized_mma_transform.hpp
+  files_reviewed_count: 3
+  scope_disposition: removed
+- number: 2185
+  title: v3.9
+  date: '2025-03-20'
+  decision: defer
+  reason: v3.9 release PR, likely contains Blackwell kernel changes but scope unclear from title
+  files_changed: []
+- number: 2203
+  title: v3.9 update
+  date: '2025-03-27'
+  decision: defer
+  reason: v3.9 update PR, likely contains kernel changes but scope unclear from title
+  files_changed: []
+- number: 2220
+  title: Set EpiTile correctly when TileN is not divisible by 32
+  date: '2025-04-04'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cutlass/epilogue/collective/builders/sm90_builder.inl'
+  files_changed:
+  - include/cutlass/epilogue/collective/builders/sm90_builder.inl
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2267
+  title: war to fix blackwell grouped groupwise hang
+  date: '2025-04-29'
+  decision: exclude
+  reason: 'remove: no positive device-kernel implementation in 1 authoritative changed file(s)'
+  files_changed:
+  - include/cutlass/gemm/kernel/sm90_tile_scheduler_group.hpp
+  files_reviewed_count: 1
+  scope_disposition: removed
+- number: 2291
+  title: Correct divmod order in example 77 (blackwell fmha)
+  date: '2025-05-13'
+  decision: exclude
+  reason: 'remove: no positive device-kernel implementation in 1 authoritative changed file(s)'
+  files_changed:
+  - examples/77_blackwell_fmha/kernel/fmha_tile_scheduler.hpp
+  files_reviewed_count: 1
+  scope_disposition: removed
+- number: 2292
+  title: Handle get_masked_trip_count for small length in fmha example
+  date: '2025-05-13'
+  decision: exclude
+  reason: 'remove: no positive device-kernel implementation in 1 authoritative changed file(s)'
+  files_changed:
+  - examples/77_blackwell_fmha/collective/fmha_fusion.hpp
+  files_reviewed_count: 1
+  scope_disposition: removed
+- number: 2333
+  title: Fix epilogue::thread::Convert cannot be used with DefaultEpilogue
+  date: '2025-05-26'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cutlass/epilogue/thread/conversion_op.h'
+  files_changed:
+  - include/cutlass/epilogue/thread/conversion_op.h
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2366
+  title: '[ex77] fix mla split; add fwd lse; add bwd varlen'
+  date: '2025-06-04'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/77_blackwell_fmha/77_blackwell_fmha.cu, examples/77_blackwell_fmha/77_blackwell_fmha_bwd.cu, examples/77_blackwell_fmha/77_blackwell_mla.cu'
+  files_changed:
+  - examples/77_blackwell_fmha/77_blackwell_fmha.cu
+  - examples/77_blackwell_fmha/77_blackwell_fmha_bwd.cu
+  - examples/77_blackwell_fmha/77_blackwell_mla.cu
+  files_reviewed_count: 19
+  scope_disposition: retained
+- number: 2370
+  title: Revert "[ex77] fix mla split; add fwd lse; add bwd varlen"
+  date: '2025-06-06'
+  decision: exclude
+  reason: 'revert of PR #2366, no net kernel change'
+  files_changed: []
+- number: 2378
+  title: support fp16 accmulator for sm89 fp8 mma
+  date: '2025-06-07'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cute/arch/mma_sm89.hpp'
+  files_changed:
+  - include/cute/arch/mma_sm89.hpp
+  files_reviewed_count: 3
+  scope_disposition: retained
+- number: 2466
+  title: Example 77 add blackwell fmha bwd for MLA shape
+  date: '2025-07-14'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/77_blackwell_fmha/77_blackwell_fmha.cu, examples/77_blackwell_fmha/77_blackwell_fmha_bwd.cu, examples/77_blackwell_fmha/77_blackwell_mla.cu,
+    examples/77_blackwell_fmha/77_blackwell_mla_fwd.cu'
+  files_changed:
+  - examples/77_blackwell_fmha/77_blackwell_fmha.cu
+  - examples/77_blackwell_fmha/77_blackwell_fmha_bwd.cu
+  - examples/77_blackwell_fmha/77_blackwell_mla.cu
+  - examples/77_blackwell_fmha/77_blackwell_mla_fwd.cu
+  files_reviewed_count: 13
+  scope_disposition: retained
+- number: 2472
+  title: 'Add Blackwell MLA forward (shape: d=192, dv=128) implementation'
+  date: '2025-07-16'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/77_blackwell_fmha/77_blackwell_fmha.cu, examples/77_blackwell_fmha/77_blackwell_mla_fwd.cu'
+  files_changed:
+  - examples/77_blackwell_fmha/77_blackwell_fmha.cu
+  - examples/77_blackwell_fmha/77_blackwell_mla_fwd.cu
+  files_reviewed_count: 13
+  scope_disposition: retained
+- number: 2480
+  title: Feature/add bottom causal mask
+  date: '2025-07-18'
+  decision: include
+  reason: adds bottom causal mask feature for FMHA kernel
+  files_changed: []
+- number: 2492
+  title: 'fix: examples/cute/tutorial/blackwell/04_mma_tma_2sm_sm100.cu GridDim miscalculated'
+  date: '2025-07-23'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/cute/tutorial/blackwell/04_mma_tma_2sm_sm100.cu'
+  files_changed:
+  - examples/cute/tutorial/blackwell/04_mma_tma_2sm_sm100.cu
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2511
+  title: '[Doc fix] incorrect compute cap. for Blackwell RTX'
+  date: '2025-07-27'
+  decision: exclude
+  reason: documentation fix for compute capability numbers
+  files_changed: []
+- number: 2599
+  title: fix gqa issue for blackwell fmha.py
+  date: '2025-08-28'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: examples/python/CuTeDSL/blackwell/fmha.py'
+  files_changed:
+  - examples/python/CuTeDSL/blackwell/fmha.py
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2639
+  title: doc change for 4.2
+  date: '2025-09-15'
+  decision: exclude
+  reason: documentation change for release 4.2
+  files_changed: []
+- number: 2713
+  title: DistGEMM bug fixes
+  date: '2025-10-22'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/65_distributed_gemm/65_distributed_gemm.cu, examples/82_blackwell_distributed_gemm/82_blackwell_distributed_gemm.cu'
+  files_changed:
+  - examples/65_distributed_gemm/65_distributed_gemm.cu
+  - examples/82_blackwell_distributed_gemm/82_blackwell_distributed_gemm.cu
+  files_reviewed_count: 4
+  scope_disposition: retained
+- number: 2719
+  title: Support PDL for SM90 Array TMA GEMM
+  date: '2025-10-24'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp, include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp'
+  files_changed:
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp
+  files_reviewed_count: 2
+  scope_disposition: retained
+- number: 2746
+  title: Support for GEMM-K=0 for Blackwell Grouped GEMMs
+  date: '2025-11-04'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/75_blackwell_grouped_gemm/75_blackwell_grouped_gemm.cu, examples/75_blackwell_grouped_gemm/75_blackwell_grouped_gemm_block_scaled.cu'
+  files_changed:
+  - examples/75_blackwell_grouped_gemm/75_blackwell_grouped_gemm.cu
+  - examples/75_blackwell_grouped_gemm/75_blackwell_grouped_gemm_block_scaled.cu
+  files_reviewed_count: 8
+  scope_disposition: retained
+- number: 2750
+  title: Add tutorial fp16_gemm_1
+  date: '2025-11-05'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_1.py'
+  files_changed:
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_1.py
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2865
+  title: '[Bug Fix]Bypass launch grids for SM120 Kernel with SM90 Mainloop & SM100 TileScheduler'
+  date: '2025-12-09'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_cooperative.hpp, include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp'
+  files_changed:
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp
+  files_reviewed_count: 2
+  scope_disposition: retained
+- number: 2881
+  title: new example with TMA prefetch feature targeting for DRAM latency boun…
+  date: '2025-12-16'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent_prefetch.py, examples/python/CuTeDSL/blackwell/dense_gemm_persistent_prefetch.py'
+  files_changed:
+  - examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent_prefetch.py
+  - examples/python/CuTeDSL/blackwell/dense_gemm_persistent_prefetch.py
+  files_reviewed_count: 4
+  scope_disposition: retained
+- number: 2894
+  title: Fix CUDA version checking in examples
+  date: '2025-12-21'
+  decision: exclude
+  reason: build system fix for CUDA version checking, no kernel changes
+  files_changed: []
+- number: 2917
+  title: New RMS Norm example with unit tests
+  date: '2026-01-01'
+  decision: include
+  reason: adds new Blackwell RMS Norm kernel example with unit tests
+  files_changed: []
+- number: 2921
+  title: Fix incorrect tensor layout strides in Blackwell MMA tutorial comments
+  date: '2026-01-03'
+  decision: include
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/cute/tutorial/blackwell/01_mma_sm100.cu'
+  files_changed:
+  - examples/cute/tutorial/blackwell/01_mma_sm100.cu
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2946
+  title: '[Cutlass profiler] Fix SM100 FP8 nosmem epilogue shape_div “Divisibility Condition” for non‑multiple‑of‑64 N tiles'
+  date: '2026-01-10'
+  decision: exclude
+  reason: 'remove: no positive device-kernel implementation in 1 authoritative changed file(s)'
+  files_changed:
+  - python/cutlass_library/generator.py
+  files_reviewed_count: 1
+  scope_disposition: removed
+- number: 2965
+  title: '[Bug Fix]Set NumSplitsM to 1 when TileShapeM < 128 in sm90 fp8 blockwise scaling CollectiveMma'
+  date: '2026-01-19'
+  decision: include
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/collective/sm90_mma_array_tma_gmma_ss_warpspecialized_fp8_blockwise_scaling.hpp'
+  files_changed:
+  - include/cutlass/gemm/collective/sm90_mma_array_tma_gmma_ss_warpspecialized_fp8_blockwise_scaling.hpp
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2977
+  title: Fix error in Blackwell document of referring to Mxf4 format as NVF4
+  date: '2026-01-23'
+  decision: exclude
+  reason: documentation fix correcting Mxf4/NVF4 format naming
+  files_changed: []
+- number: 2995
+  title: '[CuTeDSL] Fix: SM100 block-scale gemm overlapping accumulator'
+  date: '2026-02-03'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent.py, examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent_prefetch.py'
+  files_changed:
+  - examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent.py
+  - examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent_prefetch.py
+  files_reviewed_count: 2
+  scope_disposition: retained
+- number: 3021
+  title: '[Cute-DSL] Add option for issue_clc_query without multicast'
+  date: '2026-02-11'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: python/CuTeDSL/cutlass/cute/arch/clc.py'
+  files_changed:
+  - python/CuTeDSL/cutlass/cute/arch/clc.py
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 3041
+  title: remove mixed_input_fmha_prefill.py
+  date: '2026-02-18'
+  decision: exclude
+  reason: removes deprecated mixed_input_fmha_prefill.py script
+  files_changed: []
+- number: 3091
+  title: '[Hopper CuTeDSL] Add grouped GEMM kernel example'
+  date: '2026-03-06'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: examples/python/CuTeDSL/hopper/grouped_gemm.py, python/CuTeDSL/cutlass/utils/tensormap_manager.py'
+  files_changed:
+  - examples/python/CuTeDSL/hopper/grouped_gemm.py
+  - python/CuTeDSL/cutlass/utils/tensormap_manager.py
+  files_reviewed_count: 5
+  scope_disposition: retained
+- number: 3106
+  title: '[CLI] add cutedsl fp16 gemm tutorial from 2 to 6'
+  date: '2026-03-13'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_0.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_1.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_2.py,
+    examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3_1.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_4.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_5.py,
+    examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_6.py'
+  files_changed:
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_0.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_1.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_2.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3_1.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_4.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_5.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_6.py
+  files_reviewed_count: 9
+  scope_disposition: retained
+- number: 3130
+  title: Update blackwell tutorial to be compatible with 4.5-dev version
+  date: '2026-03-25'
+  decision: include
+  reason: 'retain: Python DSL device-kernel implementation added in: examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent_prefetch.py, examples/python/CuTeDSL/blackwell/dense_gemm_persistent_prefetch.py,
+    examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_2.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3_1.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_4.py,
+    examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_5.py, examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_6.py, examples/python/CuTeDSL/distributed/distributed_all_gather_gemm_blackwell.py,
+    examples/python/CuTeDSL/distributed/distributed_gemm_reduce_scatter_blackwell.py'
+  files_changed:
+  - examples/python/CuTeDSL/blackwell/dense_blockscaled_gemm_persistent_prefetch.py
+  - examples/python/CuTeDSL/blackwell/dense_gemm_persistent_prefetch.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_2.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_3_1.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_4.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_5.py
+  - examples/python/CuTeDSL/blackwell/tutorial_gemm/fp16_gemm_6.py
+  - examples/python/CuTeDSL/distributed/distributed_all_gather_gemm_blackwell.py
+  - examples/python/CuTeDSL/distributed/distributed_gemm_reduce_scatter_blackwell.py
+  files_reviewed_count: 12
+  scope_disposition: retained
+- number: 730
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 773
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 828
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 844
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 992
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1189
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1224
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1275
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1302
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1350
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1413
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1526
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1543
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1661
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1713
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1753
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1795
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1796
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1833
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1932
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 1993
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 3149
+  title: ''
+  date: '2026-04-25'
+  decision: defer
+  reason: from refresh search; needs-triage
+  files_changed: []
+- number: 3176
+  pr: 3176
+  title: Small Tile N BlockScaled GEMM + Grouped GEMM on SM12x
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/3176
+  date: '2026-04-21'
+  merged_at: '2026-04-21T16:32:40Z'
+  decision: include
+  status: merged
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/collective/builders/sm120_blockscaled_mma_builder.inl, include/cutlass/gemm/collective/sm120_blockscaled_mma_array_tma.hpp, include/cutlass/gemm/collective/sm120_blockscaled_mma_tma.hpp,
+    include/cutlass/gemm/collective/sm120_mma_array_tma_blockwise_scaling.hpp, include/cutlass/gemm/collective/sm120_mma_tma_blockwise_scaling.hpp, include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp,
+    include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp'
+  inclusion_reason: Inspect scale layout, accumulator type, tile/schedule choice, epilogue fusion, and partial-tile guards before deriving a candidate.
+  seed_source: legacy-pr-index
+  primary_category: gemm_quant
+  categories:
+  - gemm_quant
+  - arch_pipeline
+  tags:
+  - arch_pipeline
+  - blockscaled
+  - gemm_quant
+  - grouped gemm
+  - sm120
+  architectures:
+  - sm100
+  - sm90
+  techniques:
+  - async-copy
+  - fine-grained-quantization
+  - kernel-fusion
+  - pipeline-stages
+  - warp-specialization
+  hardware_features:
+  - hopper
+  - tma
+  kernel_types:
+  - decode
+  - gemm
+  - runtime
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - include/cutlass/gemm/collective/builders/sm120_blockscaled_mma_builder.inl
+  - include/cutlass/gemm/collective/sm120_blockscaled_mma_array_tma.hpp
+  - include/cutlass/gemm/collective/sm120_blockscaled_mma_tma.hpp
+  - include/cutlass/gemm/collective/sm120_mma_array_tma_blockwise_scaling.hpp
+  - include/cutlass/gemm/collective/sm120_mma_tma.hpp
+  - include/cutlass/gemm/collective/sm120_mma_tma_blockwise_scaling.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp
+  - python/cutlass_library/generator.py
+  - test/unit/gemm/device/sm120_blockscaled_tensorop_gemm/sm120_bs_gemm_mxf4_mxf4_f32_f32.cu
+  - test/unit/gemm/device/sm120_blockscaled_tensorop_gemm/sm120_bs_gemm_nvf4_nvf4_f32_nvf4_group_gemm_fusion.cu
+  score: 42
+  ncu_hint: Tensor pipe %, DRAM/L2 bytes, active cycles, register pressure, and scale-load traffic.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-3176
+  files_changed:
+  - include/cutlass/gemm/collective/builders/sm120_blockscaled_mma_builder.inl
+  - include/cutlass/gemm/collective/sm120_blockscaled_mma_array_tma.hpp
+  - include/cutlass/gemm/collective/sm120_blockscaled_mma_tma.hpp
+  - include/cutlass/gemm/collective/sm120_mma_array_tma_blockwise_scaling.hpp
+  - include/cutlass/gemm/collective/sm120_mma_tma_blockwise_scaling.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp
+  files_reviewed_count: 13
+  scope_disposition: retained
+- number: 2790
+  pr: 2790
+  title: Blockscaled Ragged Contiguous Grouped Gemm for MoEs
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2790
+  date: '2025-11-27'
+  merged_at: '2025-11-27T01:16:49Z'
+  decision: include
+  status: merged
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/92_blackwell_moe_gemm/92_blackwell_moe_gemm_blockscaled_rcgrouped.cu'
+  inclusion_reason: Inspect scale layout, accumulator type, tile/schedule choice, epilogue fusion, and partial-tile guards before deriving a candidate.
+  seed_source: legacy-pr-index
+  primary_category: gemm_quant
+  categories:
+  - gemm_quant
+  - moe_routing
+  - arch_pipeline
+  tags:
+  - arch_pipeline
+  - blockscaled
+  - gemm_quant
+  - grouped gemm
+  - moe_routing
+  - tma
+  architectures:
+  - sm100
+  techniques:
+  - async-copy
+  - fine-grained-quantization
+  - pipeline-stages
+  - warp-specialization
+  hardware_features:
+  - blackwell
+  - tma
+  kernel_types:
+  - gemm
+  - moe
+  - runtime
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - examples/92_blackwell_moe_gemm/92_blackwell_moe_gemm_blockscaled_rcgrouped.cu
+  - examples/92_blackwell_moe_gemm/CMakeLists.txt
+  - include/cutlass/gemm/collective/builders/sm100_blockscaled_umma_builder.inl
+  - include/cutlass/gemm/collective/collective_mma.hpp
+  - include/cutlass/gemm/collective/sm100_blockscaled_mma_array_warpspecialized_rcggemm.hpp
+  - include/cutlass/gemm/dispatch_policy.hpp
+  score: 40
+  ncu_hint: Tensor pipe %, DRAM/L2 bytes, active cycles, register pressure, and scale-load traffic.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2790
+  files_changed:
+  - examples/92_blackwell_moe_gemm/92_blackwell_moe_gemm_blockscaled_rcgrouped.cu
+  files_reviewed_count: 6
+  scope_disposition: retained
+- number: 3092
+  pr: 3092
+  title: Support for Group GEMM in CUTLASS Profiler for GeForce and Spark
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/3092
+  date: '2026-03-07'
+  merged_at: '2026-03-07T01:36:30Z'
+  decision: include
+  status: merged
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/collective/builders/sm120_blockscaled_mma_builder.inl, include/cutlass/gemm/collective/builders/sm1xx_common.inl'
+  inclusion_reason: Inspect scale layout, accumulator type, tile/schedule choice, epilogue fusion, and partial-tile guards before deriving a candidate.
+  seed_source: legacy-pr-index
+  primary_category: gemm_quant
+  categories:
+  - gemm_quant
+  - arch_pipeline
+  tags:
+  - arch_pipeline
+  - gemm_quant
+  - recent-kernel-path
+  architectures:
+  - sm100
+  techniques:
+  - fine-grained-quantization
+  - pipeline-stages
+  hardware_features:
+  - blackwell
+  kernel_types:
+  - gemm
+  - runtime
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - examples/79_blackwell_geforce_gemm/CMakeLists.txt
+  - examples/80_blackwell_geforce_sparse_gemm/CMakeLists.txt
+  - examples/87_blackwell_geforce_gemm_blockwise/CMakeLists.txt
+  - include/cutlass/gemm/collective/builders/sm120_blockscaled_mma_builder.inl
+  - include/cutlass/gemm/collective/builders/sm1xx_common.inl
+  - python/cutlass_library/generator.py
+  - python/cutlass_library/library.py
+  - tools/library/src/grouped_gemm_operation_3x.hpp
+  score: 38
+  ncu_hint: Tensor pipe %, DRAM/L2 bytes, active cycles, register pressure, and scale-load traffic.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-3092
+  files_changed:
+  - include/cutlass/gemm/collective/builders/sm120_blockscaled_mma_builder.inl
+  - include/cutlass/gemm/collective/builders/sm1xx_common.inl
+  files_reviewed_count: 8
+  scope_disposition: retained
+- number: 2256
+  pr: 2256
+  title: Use cudaMemcpyAsync in gemm grouped with kRequiresPrecomputation sche…
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2256
+  date: '2025-04-30'
+  merged_at: '2025-04-30T19:28:06Z'
+  decision: exclude
+  status: merged
+  reason: 'remove: no positive device-kernel implementation in 1 authoritative changed file(s)'
+  inclusion_reason: Inspect scale layout, accumulator type, tile/schedule choice, epilogue fusion, and partial-tile guards before deriving a candidate.
+  seed_source: legacy-pr-index
+  primary_category: gemm_quant
+  categories:
+  - gemm_quant
+  - moe_routing
+  - memory_primitives
+  tags:
+  - gemm_quant
+  - grouped gemm
+  - memory_primitives
+  - moe_routing
+  architectures:
+  - sm100
+  techniques:
+  - fine-grained-quantization
+  hardware_features: []
+  kernel_types:
+  - gemm
+  - memory
+  - moe
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - include/cutlass/gemm/device/base_grouped.h
+  score: 32
+  ncu_hint: Tensor pipe %, DRAM/L2 bytes, active cycles, register pressure, and scale-load traffic.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2256
+  files_changed:
+  - include/cutlass/gemm/device/base_grouped.h
+  files_reviewed_count: 1
+  scope_disposition: removed
+- number: 2095
+  pr: 2095
+  title: 'Improvements for: Groupwise scaling along M for FP8 gemm'
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2095
+  date: '2025-02-28'
+  merged_at: '2025-02-28T03:39:29Z'
+  decision: include
+  status: merged
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling.cu, examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu'
+  inclusion_reason: Inspect scale layout, accumulator type, tile/schedule choice, epilogue fusion, and partial-tile guards before deriving a candidate.
+  seed_source: legacy-pr-index
+  primary_category: gemm_quant
+  categories:
+  - gemm_quant
+  - arch_pipeline
+  tags:
+  - arch_pipeline
+  - fp8
+  - gemm_quant
+  - hopper
+  - sm90
+  - tma
+  architectures:
+  - sm90
+  techniques:
+  - async-copy
+  - fine-grained-quantization
+  - pipeline-stages
+  - warp-specialization
+  hardware_features:
+  - fp8
+  - hopper
+  - tma
+  kernel_types:
+  - gemm
+  - runtime
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling.cu
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/reference/host/gemm_with_groupwise_scaling.h
+  - include/cutlass/gemm/collective/sm90_mma_tma_gmma_ss_warpspecialized_fp8_blockwise_scaling.hpp
+  score: 30
+  ncu_hint: Tensor pipe %, DRAM/L2 bytes, active cycles, register pressure, and scale-load traffic.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2095
+  files_changed:
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling.cu
+  - examples/67_hopper_fp8_warp_specialized_gemm_with_blockwise_scaling/67_hopper_fp8_warp_specialized_gemm_with_groupwise_scaling.cu
+  files_reviewed_count: 4
+  scope_disposition: retained
+- number: 3184
+  pr: 3184
+  title: Add Snake activation functor for EVT
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/3184
+  date: '2026-05-12'
+  merged_at: '2026-05-12T02:09:53Z'
+  decision: exclude
+  status: merged
+  reason: 'remove: no positive device-kernel implementation in 2 authoritative changed file(s)'
+  inclusion_reason: Look for fusion, vectorization, dtype conversion, and store-traffic reductions before changing math.
+  seed_source: legacy-pr-index
+  primary_category: norm_elementwise
+  categories:
+  - norm_elementwise
+  tags:
+  - EVT
+  - epilogue
+  - norm_elementwise
+  - sm90
+  architectures:
+  - sm90
+  techniques:
+  - epilogue-fusion
+  hardware_features:
+  - hopper
+  kernel_types:
+  - norm
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - include/cutlass/epilogue/thread/activation.h
+  - test/unit/epilogue/thread/activation.cu
+  score: 24
+  ncu_hint: DRAM %, L2 bytes, global load/store sectors, eligible warps, and long scoreboard.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-3184
+  files_changed:
+  - include/cutlass/epilogue/thread/activation.h
+  - test/unit/epilogue/thread/activation.cu
+  files_reviewed_count: 2
+  scope_disposition: removed
+- number: 2875
+  pr: 2875
+  title: '[cute] Add constexpr specifier to make_tiled_copy'
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2875
+  date: '2026-01-03'
+  merged_at: '2026-01-03T20:39:43Z'
+  decision: include
+  status: merged
+  reason: 'retain: added device-code construct in: include/cute/atom/copy_atom.hpp'
+  inclusion_reason: 'Transfer primitive policy carefully: coalescing, shared-memory staging, partial tiles, and determinism are part of the contract.'
+  seed_source: legacy-pr-index
+  primary_category: memory_primitives
+  categories:
+  - memory_primitives
+  - compiler_runtime
+  tags:
+  - compiler_runtime
+  - int8
+  - memory_primitives
+  architectures:
+  - sm100
+  techniques: []
+  hardware_features: []
+  kernel_types:
+  - compiler
+  - memory
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - include/cute/atom/copy_atom.hpp
+  score: 25
+  ncu_hint: DRAM throughput, L2 hit rate, memory sectors, shared-memory conflicts, and synchronization overhead.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2875
+  files_changed:
+  - include/cute/atom/copy_atom.hpp
+  files_reviewed_count: 1
+  scope_disposition: retained
+- number: 2596
+  pr: 2596
+  title: Fix broken imports in heuristics_provider.py
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2596
+  date: '2025-08-29'
+  merged_at: '2025-08-29T02:32:55Z'
+  decision: include
+  status: merged
+  reason: legacy PR seed promoted into PR-diff corpus
+  inclusion_reason: Treat scheduler/autotune configs as shape-specific evidence; replay benchmark shapes before generalizing.
+  seed_source: legacy-pr-index
+  primary_category: scheduler_autotune
+  categories:
+  - scheduler_autotune
+  tags:
+  - recent-kernel-path
+  - scheduler_autotune
+  architectures:
+  - sm100
+  techniques:
+  - autotuning
+  - tile-scheduling
+  hardware_features: []
+  kernel_types:
+  - scheduler
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - python/cutlass_library/heuristics.py
+  - python/cutlass_library/heuristics_provider.py
+  score: 16
+  ncu_hint: SM occupancy, waves/SM, active cycles, tail effects, and load imbalance.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2596
+- number: 2123
+  pr: 2123
+  title: Hopper Grouped GEMM support for FP8 Accum
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2123
+  date: '2025-02-21'
+  merged_at: '2025-02-21T02:55:26Z'
+  decision: include
+  status: merged
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/collective/builders/sm90_gmma_builder.inl, include/cutlass/gemm/collective/sm90_mma_array_tma_gmma_ss_warpspecialized_fp8.hpp, include/cutlass/gemm/dispatch_policy.hpp'
+  inclusion_reason: 'Extract the architecture assumption first: SM target, TMA/WGMMA/tcgen path, cluster use, and pipeline stages.'
+  seed_source: legacy-pr-index
+  primary_category: arch_pipeline
+  categories:
+  - arch_pipeline
+  - gemm_quant
+  - moe_routing
+  tags:
+  - arch_pipeline
+  - collective builder
+  - fp8
+  - gemm_quant
+  - grouped gemm
+  - hopper
+  - moe_routing
+  architectures:
+  - sm90
+  techniques:
+  - async-copy
+  - fine-grained-quantization
+  - pipeline-stages
+  - warp-specialization
+  hardware_features:
+  - fp8
+  - hopper
+  - tma
+  kernel_types:
+  - gemm
+  - moe
+  - runtime
+  languages:
+  - cute-dsl
+  changed_paths:
+  - .gitignore
+  - CONTRIBUTORS.md
+  - include/cutlass/gemm/collective/builders/sm90_gmma_builder.inl
+  - include/cutlass/gemm/collective/collective_mma.hpp
+  - include/cutlass/gemm/collective/sm90_mma_array_tma_gmma_ss_warpspecialized_fp8.hpp
+  - include/cutlass/gemm/dispatch_policy.hpp
+  - python/cutlass_library/library.py
+  - python/cutlass_library/sm90_utils.py
+  - tools/library/src/grouped_gemm_operation_3x.hpp
+  score: 45
+  ncu_hint: Tensor pipe %, memory pipe utilization, barrier stalls, wait groups, and occupancy.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2123
+  files_changed:
+  - include/cutlass/gemm/collective/builders/sm90_gmma_builder.inl
+  - include/cutlass/gemm/collective/sm90_mma_array_tma_gmma_ss_warpspecialized_fp8.hpp
+  - include/cutlass/gemm/dispatch_policy.hpp
+  files_reviewed_count: 9
+  scope_disposition: retained
+- number: 1883
+  pr: 1883
+  title: Improve sm90 mixed dtype kernel
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/1883
+  date: '2024-10-18'
+  merged_at: '2024-10-18T00:06:38Z'
+  decision: include
+  status: merged
+  reason: 'retain: CUDA/CuTe/PTX device implementation path(s): examples/55_hopper_mixed_dtype_gemm/55_hopper_int4_bf16_gemm.cu, examples/55_hopper_mixed_dtype_gemm/55_hopper_int4_fp8_gemm.cu'
+  inclusion_reason: 'Extract the architecture assumption first: SM target, TMA/WGMMA/tcgen path, cluster use, and pipeline stages.'
+  seed_source: legacy-pr-index
+  primary_category: arch_pipeline
+  categories:
+  - arch_pipeline
+  - gemm_quant
+  tags:
+  - arch_pipeline
+  - gemm_quant
+  - sm90
+  architectures:
+  - sm90
+  techniques:
+  - async-copy
+  - epilogue-fusion
+  - fine-grained-quantization
+  - pipeline-stages
+  - warp-specialization
+  hardware_features:
+  - fp8
+  - hopper
+  - tma
+  kernel_types:
+  - gemm
+  - runtime
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - examples/55_hopper_mixed_dtype_gemm/55_hopper_int4_bf16_gemm.cu
+  - examples/55_hopper_mixed_dtype_gemm/55_hopper_int4_fp8_gemm.cu
+  - examples/55_hopper_mixed_dtype_gemm/CMakeLists.txt
+  - examples/55_hopper_mixed_dtype_gemm/packed_scale.hpp
+  - examples/55_hopper_mixed_dtype_gemm/reorder_utils.hpp
+  - include/cute/algorithm/tuple_algorithms.hpp
+  - include/cutlass/detail/layout.hpp
+  - include/cutlass/epilogue/collective/sm90_epilogue_tma_warpspecialized.hpp
+  - include/cutlass/gemm/collective/builders/sm90_gmma_builder.inl
+  - include/cutlass/gemm/collective/sm90_mma_tma_gmma_rs_warpspecialized_mixed_input.hpp
+  - include/cutlass/gemm/gemm.h
+  score: 37
+  ncu_hint: Tensor pipe %, memory pipe utilization, barrier stalls, wait groups, and occupancy.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-1883
+  files_changed:
+  - examples/55_hopper_mixed_dtype_gemm/55_hopper_int4_bf16_gemm.cu
+  - examples/55_hopper_mixed_dtype_gemm/55_hopper_int4_fp8_gemm.cu
+  files_reviewed_count: 11
+  scope_disposition: retained
+- number: 2270
+  pr: 2270
+  title: hopper-blockwise-generalization-optimization
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2270
+  date: '2025-04-29'
+  merged_at: '2025-04-29T20:47:22Z'
+  decision: include
+  status: merged
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/collective/builders/sm90_gmma_builder.inl, include/cutlass/gemm/collective/sm90_mma_tma_gmma_ss_warpspecialized_fp8_blockwise_scaling.hpp,
+    include/cutlass/gemm/dispatch_policy.hpp, include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_cooperative.hpp, include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp'
+  inclusion_reason: 'Extract the architecture assumption first: SM target, TMA/WGMMA/tcgen path, cluster use, and pipeline stages.'
+  seed_source: legacy-pr-index
+  primary_category: arch_pipeline
+  categories:
+  - arch_pipeline
+  - gemm_quant
+  tags:
+  - arch_pipeline
+  - gemm_quant
+  - hopper
+  architectures:
+  - sm90
+  techniques:
+  - async-copy
+  - fine-grained-quantization
+  - pipeline-stages
+  - warp-specialization
+  hardware_features:
+  - fp8
+  - hopper
+  - tma
+  kernel_types:
+  - gemm
+  - runtime
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - include/cute/atom/mma_traits_sm90_gmma.hpp
+  - include/cutlass/gemm/collective/builders/sm90_gmma_builder.inl
+  - include/cutlass/gemm/collective/fp8_accumulation.hpp
+  - include/cutlass/gemm/collective/sm90_mma_tma_gmma_ss_warpspecialized_fp8_blockwise_scaling.hpp
+  - include/cutlass/gemm/dispatch_policy.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp
+  score: 35
+  ncu_hint: Tensor pipe %, memory pipe utilization, barrier stalls, wait groups, and occupancy.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2270
+  files_changed:
+  - include/cutlass/gemm/collective/builders/sm90_gmma_builder.inl
+  - include/cutlass/gemm/collective/sm90_mma_tma_gmma_ss_warpspecialized_fp8_blockwise_scaling.hpp
+  - include/cutlass/gemm/dispatch_policy.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp
+  files_reviewed_count: 9
+  scope_disposition: retained
+- number: 3055
+  pr: 3055
+  title: Replace std::min with cute::min in sm120 blockwise scaling device functions
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/3055
+  date: '2026-04-24'
+  merged_at: '2026-04-24T15:13:38Z'
+  decision: include
+  status: merged
+  reason: 'retain: added device-code construct in: include/cutlass/gemm/collective/sm120_mma_array_tma_blockwise_scaling.hpp, include/cutlass/gemm/collective/sm120_mma_tma_blockwise_scaling.hpp'
+  inclusion_reason: 'Extract the architecture assumption first: SM target, TMA/WGMMA/tcgen path, cluster use, and pipeline stages.'
+  seed_source: legacy-pr-index
+  primary_category: arch_pipeline
+  categories:
+  - arch_pipeline
+  - gemm_quant
+  - compiler_runtime
+  tags:
+  - arch_pipeline
+  - compiler_runtime
+  - gemm_quant
+  - sm120
+  - tma
+  architectures:
+  - sm100
+  techniques:
+  - async-copy
+  - fine-grained-quantization
+  - pipeline-stages
+  hardware_features:
+  - tma
+  kernel_types:
+  - compiler
+  - gemm
+  - runtime
+  languages:
+  - cute-dsl
+  changed_paths:
+  - include/cutlass/gemm/collective/sm120_mma_array_tma_blockwise_scaling.hpp
+  - include/cutlass/gemm/collective/sm120_mma_tma_blockwise_scaling.hpp
+  score: 34
+  ncu_hint: Tensor pipe %, memory pipe utilization, barrier stalls, wait groups, and occupancy.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-3055
+  files_changed:
+  - include/cutlass/gemm/collective/sm120_mma_array_tma_blockwise_scaling.hpp
+  - include/cutlass/gemm/collective/sm120_mma_tma_blockwise_scaling.hpp
+  files_reviewed_count: 2
+  scope_disposition: retained
+- number: 2172
+  pr: 2172
+  title: Fix SM90 beta=1 hang and stream-K launch errors
+  repo: NVIDIA/cutlass
+  url: https://github.com/NVIDIA/cutlass/pull/2172
+  date: '2025-03-13'
+  merged_at: '2025-03-13T18:07:37Z'
+  decision: exclude
+  status: merged
+  reason: 'remove: no positive device-kernel implementation in 4 authoritative changed file(s)'
+  inclusion_reason: 'Extract the architecture assumption first: SM target, TMA/WGMMA/tcgen path, cluster use, and pipeline stages.'
+  seed_source: legacy-pr-index
+  primary_category: arch_pipeline
+  categories:
+  - arch_pipeline
+  - scheduler_autotune
+  tags:
+  - arch_pipeline
+  - scheduler_autotune
+  - sm90
+  - stream-k
+  architectures:
+  - sm90
+  techniques:
+  - async-copy
+  - autotuning
+  - pipeline-stages
+  - tile-scheduling
+  - warp-specialization
+  hardware_features:
+  - hopper
+  - tma
+  kernel_types:
+  - gemm
+  - runtime
+  - scheduler
+  languages:
+  - cuda-cpp
+  - cute-dsl
+  changed_paths:
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp
+  - include/cutlass/gemm/kernel/tile_scheduler_params.h
+  score: 32
+  ncu_hint: Tensor pipe %, memory pipe utilization, barrier stalls, wait groups, and occupancy.
+  artifact_dir: evidence/pull-bundles/cutlass/gh-2172
+  files_changed:
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_cooperative.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_array_tma_warpspecialized_pingpong.hpp
+  - include/cutlass/gemm/kernel/sm90_gemm_tma_warpspecialized_pingpong.hpp
+  - include/cutlass/gemm/kernel/tile_scheduler_params.h
+  files_reviewed_count: 4
+  scope_disposition: removed

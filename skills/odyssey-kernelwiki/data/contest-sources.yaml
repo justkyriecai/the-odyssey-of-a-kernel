@@ -1,0 +1,9 @@
+## Contest submission sources manifest
+## Consumed by scripts/collect_contest_code.py.
+##
+## The factual audit removed historical rank/submission mappings that were
+## Discord-only or contradicted the organizers' current public results. Add an
+## entry only when a public, author-republished code source establishes the
+## participant and the submission represented by the bundle.
+
+{}

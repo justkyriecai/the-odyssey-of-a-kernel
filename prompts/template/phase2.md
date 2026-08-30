@@ -72,10 +72,14 @@ iterated on: too slow, needs a bigger card, needs a chunked reference.>>
   `max_abs_error`, `decision` (`keep` / `reject` / `park`), `evidence` (a
   path, a commit, a run), `notes`, `timestamp`. Rejected branches included --
   especially rejected branches.
-- Keep an NCU report per major direction under `runs/profile/<direction>/`,
-  with a text export next to the binary.
+- Keep a profile per major direction under `runs/profile/<direction>/`, with a
+  text export next to the binary dump. NCU when counters are available; when
+  they are not -- `ERR_NVGPUCTRPERM` is the normal case on a rented pod -- an
+  `nsys` timeline or a `torch.profiler` table, with the report saying which
+  instrument produced it and what is therefore not measured. See
+  `odyssey-ncu-report`.
 - At most five iterations per direction. Then record the evidence and move on.
-- Use `KernelWiki` for kernel research and `ncu-report-skill` for reading
+- Use `odyssey-kernelwiki` for kernel research and `odyssey-ncu-report` for reading
   profiles.
 - Do not modify the evaluator. Do not tune against a single shape and report
   it as a general result. Do not report a best-of run; report the median, with
@@ -105,8 +109,11 @@ with the reason.>>
 
 ## Phase 2 Goal
 
-**Profile before optimizing.** Collect an NCU report for the central shape and
-read it. The question to answer first is not "which kernel is slowest" but
+**Profile before optimizing.** Collect a profile for the central shape and read
+it. NCU if this machine allows counters; if it answers `ERR_NVGPUCTRPERM`, that
+is the platform's configuration and not something to retry -- switch to the
+`nsys` timeline path in `odyssey-ncu-report`, which answers the question below
+without counters, and record the limitation. The question to answer first is not "which kernel is slowest" but
 "is this workload launch-bound, memory-bound, or compute-bound" -- because the
 answer determines which whole class of optimization is worth any iterations at
 all. <<State the prior for this shape profile, and tell the agent not to assume
@@ -125,8 +132,10 @@ correctness, or shows no credible path after five, record the evidence in
 limit is not a suggestion; it is the only thing that bounds a search.
 
 **Evidence per direction.** Before/after numbers on every development shape,
-plus enough NCU counters to say *why* it helped or did not. "It got faster" is
-not a reason to keep something; knowing which stall reason went away is.
+plus enough profile evidence to say *why* it helped or did not -- the stall
+reason that went away, or, without counters, the launches that stopped
+happening and the gaps that closed. "It got faster" is not a reason to keep
+something.
 
 **Guard against the two ways this goes wrong.** Tuning against one shape until
 everything else regresses -- run the full development set, not one case. And

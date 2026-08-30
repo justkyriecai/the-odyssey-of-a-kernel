@@ -20,8 +20,8 @@ workspace after it: [`workspace/transformer-forward-opt/`](workspace/transformer
 | Path | Purpose |
 |---|---|
 | [`prompts/template/`](prompts/) | The three phase prompts with every task-specific slot marked `<<...>>`, and the shared block they are built from |
-| [`skills/`](skills/) | [KernelWiki](https://github.com/mit-han-lab/KernelWiki) (kernel research) and [ncu-report-skill](https://github.com/mit-han-lab/ncu-report-skill) (reading Nsight Compute), as submodules |
-| [`scripts/`](scripts/) | `setup_env.sh`, `setup_agent.sh` (humanize plus the two skills), `check_gpu.sh` (the D0 gate), `new_workspace.sh`, `build_prompts.py` |
+| [`skills/`](skills/) | The four `odyssey-` skills: `onboarding`, `create-workspace`, `kernelwiki` (kernel research) and `ncu-report` (reading Nsight Compute). Vendored, not submodules -- see each one's `VENDORED.md` |
+| [`scripts/`](scripts/) | `setup_env.sh`, `setup_agent.sh` (humanize, and links `skills/` into `.claude/skills/`), `check_gpu.sh` (the D0 gate), `new_workspace.sh`, `build_prompts.py` |
 | [`docs/method.md`](docs/method.md) | The three phases, the loop inside each, and the disciplines that bound a search |
 | [`docs/new-task.md`](docs/new-task.md) | Starting a workspace for another operator |
 | `workspace/<task>/` | Everything about one task: the evaluator (vendored, never edited), shape sets, candidates, prompts, docs, the machine it runs on, and the evidence under `runs/` |
@@ -65,8 +65,8 @@ flowchart LR
 
 Their post-contest ablation found the plan/execute/verify harness dominated
 both the knowledge base and the profiler skill (1.37x → 3.71x with humanize,
-6.14x with KernelWiki, 8.58x with ncu-report-skill). This project takes that at
-face value: install the harness, and spend the time on specialization and
+6.14x with the kernel wiki, 8.58x with the profiler skill). This project takes
+that at face value: install the harness, and spend the time on specialization and
 evidence rather than on inventing search machinery.
 
 ## Four rules every workspace inherits
@@ -93,12 +93,16 @@ the last night it is a guess.
 ## Quick start
 
 ```bash
-git clone --recurse-submodules https://github.com/justkyriecai/the-odyssey-of-a-kernel.git
+git clone https://github.com/justkyriecai/the-odyssey-of-a-kernel.git
 cd the-odyssey-of-a-kernel
 ./scripts/setup_env.sh          # TORCH_INDEX=... for a specific CUDA wheel
-./scripts/setup_agent.sh        # humanize plugin and the two research skills
-./scripts/check_gpu.sh          # on a GPU box: driver, torch, whether ncu may profile
+./scripts/setup_agent.sh        # humanize plugin; links skills/ into .claude/skills/
+./scripts/check_gpu.sh          # on a GPU box: driver, torch, and which profiler works
 ```
+
+Or, in a session started at the repository root, ask for the
+`odyssey-onboarding` skill: it runs the same setup, checks every skill loads
+under the name it declares, and refreshes the routing block in `CLAUDE.md`.
 
 ```bash
 cd workspace/transformer-forward-opt
@@ -115,12 +119,27 @@ rounds.
 ## Starting a workspace for another operator
 
 ```bash
-./scripts/new_workspace.sh my-op
+./scripts/new_workspace.sh my-op-h100-20260830
 ```
 
-creates `workspace/my-op/` with the skeleton, the phase prompts from the
-template, a `verify.py` to adapt, and a README listing what is still yours to
-do. [`docs/new-task.md`](docs/new-task.md) walks through it. The second
+or ask an agent for the `odyssey-create-workspace` skill, which takes a task
+description and a card, names the directory `<task>-<gpu>-<date>`, and fills in
+the workspace `CLAUDE.md` and the slots in `prompts/_shared.md` with whatever
+the description already answered.
+
+Moving the same task to another card is a new workspace, not an edit of the old
+one:
+
+```bash
+./scripts/new_workspace.sh my-op-b200-20260912 --from my-op-h100-20260830
+```
+
+carries the evaluator, the shapes, `verify.py` and the candidates across, and
+leaves `runs/` empty -- a number measured on one card is not evidence about
+another. The old workspace stays as the record of what happened on it.
+
+Either way you get the skeleton, the phase prompts from the template, a
+`verify.py` to adapt, and a README listing what is still yours to do. [`docs/new-task.md`](docs/new-task.md) walks through it. The second
 operator is what turns "we built an agent for this problem" into "we built an
 agent".
 

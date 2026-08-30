@@ -1,0 +1,27 @@
+## Fixture: a candidate ledger that should FAIL ledger-shape validation
+## under AC-3. Two intentional defects:
+##   (1) `keywords_used` is missing from the top-level shape;
+##   (2) the row counts disagree with the summary fields
+##       (1 include + 1 exclude + 0 defer = 2 rows, but
+##        total_candidates says 3 and excluded says 2).
+##
+## Used by scripts/validate.py's ledger-shape unit-style check (task5
+## sub-clause (a)) to verify the validator rejects malformed ledgers.
+
+repo: example-org/example-repo
+searched_at: '2026-04-27'
+total_candidates: 3
+included: 1
+excluded: 2
+deferred: 0
+prs:
+  - number: 200
+    title: 'Bad fixture include row'
+    date: '2026-04-15'
+    decision: include
+    reason: kernel file changes
+  - number: 201
+    title: 'Bad fixture exclude row'
+    date: '2026-04-16'
+    decision: exclude
+    reason: docs-only PR

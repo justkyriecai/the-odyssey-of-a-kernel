@@ -121,6 +121,11 @@ def dispatch_class(official: Any) -> type:
 
             from . import CANDIDATES  # noqa: PLC0415 - the package imports this module
 
+            if name not in CANDIDATES:
+                # A stale table (candidate renamed or removed since calibration)
+                # must degrade to the baseline path, not raise at serve time.
+                self._delegates[name] = self
+                return self
             module = CANDIDATES[name][1](official)(self.config)
             # Share this model's parameters by reference. The delegate's own
             # freshly-allocated layers are discarded here; that costs one CPU
@@ -174,6 +179,10 @@ def calibrate(csv_path: Path = BENCHMARK_CSV, *, margin: float = DEFAULT_MARGIN)
     cases_in: dict[str, set[str]] = defaultdict(set)
     for row in rows:
         if row["candidate"] in NOT_DISPATCHABLE or "--compile-baseline" in row.get("script_args", ""):
+            continue
+        # benchmark.csv accumulates rows from every tolerance the campaign has
+        # used; admission decisions are only comparable at the official pair.
+        if (row.get("atol"), row.get("rtol")) != ("0.002", "0.02"):
             continue
         key = row_dispatch_key(row)
         latest[key][row["candidate"]][row["case"]] = row

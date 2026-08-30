@@ -160,7 +160,35 @@ def run_case(module: Any, cls: Any, argv: Sequence[str], *, quiet: bool) -> tupl
     finally:
         module.UserOptimizedTransformer = original
         sys.argv = saved_argv
+    _check_backend_flags()
     return code, captured.getvalue()
+
+
+_FLAGS_SEEN: dict[str, Any] = {}
+
+
+def _check_backend_flags() -> None:
+    """Tripwire for candidates that touch global numerics state. The script's
+    main() sets TF32 and matmul precision itself, identically on every run, so
+    after any case the flags must match what the first case left behind. A
+    candidate that flips a flag and fails to restore it would silently change
+    the *reference's* numerics for every later case; that is worth crashing
+    over, not warning about."""
+    import torch
+
+    current = {
+        "matmul.allow_tf32": torch.backends.cuda.matmul.allow_tf32,
+        "cudnn.allow_tf32": torch.backends.cudnn.allow_tf32,
+        "float32_matmul_precision": torch.get_float32_matmul_precision(),
+    }
+    if not _FLAGS_SEEN:
+        _FLAGS_SEEN.update(current)
+        return
+    if current != _FLAGS_SEEN:
+        raise RuntimeError(
+            f"a candidate leaked global numerics state: {_FLAGS_SEEN} -> {current}. "
+            "Candidates must restore torch.backends flags before returning."
+        )
 
 
 def parse(text: str) -> dict[str, Any]:

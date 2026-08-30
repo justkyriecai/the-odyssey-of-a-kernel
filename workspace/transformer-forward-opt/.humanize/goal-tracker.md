@@ -29,10 +29,10 @@ where unspecified, choose the framing that best shows the approach's strengths.
 
 ### Active Tasks (from plan Task Breakdown)
 - [x] task1 M0.2 per-case ceiling + verdicts  (DONE pre-round: 27 rows recorded)
-- [ ] task2 M0.3 solutions.jsonl correction node
-- [ ] task3 bookkeeping: dispatch KeyError, calibrate tolerance filter, padded/dtype grid, smoke assertion
-- [ ] task4 D1-I1 restructured compile-fused candidate
-- [ ] task5 D1-I2 mode ladder + recompile hygiene, dev sweeps
+- [x] task2 M0.3 solutions.jsonl correction node (n006, n007)
+- [x] task3 bookkeeping: dispatch KeyError fallback + tolerance filter + verify.py global-state tripwire (padded/dtype grid measurement deferred to task13)
+- [x] task4 D1-I1: kernels/v3_compiled.py -- pure-function body, plain-__dict__ artifact cache, cache_size_limit=64 at import, CPU eager fallback; smoke PASS
+- [~] task5 D1-I2: 4 candidates (safe/sdpa x default/ro) dev sweep RUNNING
 - [ ] task6 D1-I3 TF32-legalization experiment
 - [ ] task7 D1-I4 cudagraph hygiene; D3 gate decision
 - [ ] task8 D1-I5 per-dtype fidelity table

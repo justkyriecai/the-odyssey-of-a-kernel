@@ -250,11 +250,17 @@ claude plugin install runpod@runpod
 ```
 
 then `/reload-plugins` and `/mcp` → **runpod** → sign in (OAuth; no API key is
-stored). The alternative is RunPod's own stdio server, `@runpod/mcp-server`,
-registered in a git-ignored `.mcp.json` at the repository root with
-`RUNPOD_API_KEY` read from the environment. Either is useful for automating the
-create-attach-terminate cycle once the volume exists; neither is needed for
-anything above.
+stored). The alternative is RunPod's own stdio server, `@runpod/mcp-server`
+(54 tools: pods, network volumes, templates, GPU capacity per data center,
+billing), registered at local scope so the key lives in `~/.claude.json` and
+never in this tree:
+
+```bash
+claude mcp add --scope local -e RUNPOD_API_KEY=<key> runpod -- npx -y @runpod/mcp-server@latest
+```
+
+Either is useful for automating the create-attach-terminate cycle once the
+volume exists; neither is needed for anything above.
 
 ## Teardown checklist
 

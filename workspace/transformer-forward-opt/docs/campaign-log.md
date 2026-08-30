@@ -267,3 +267,21 @@ and cuts shape #14 from 25.9 to 23.2 s, with the off-script comparison
 re-verified at 0 bad of 3.28e9. Review stayed light per directive: the
 self-audit's one catch was re-verifying padded lanes after each kernel change,
 and both landed PASS.
+
+## 2026-08-30 -- the ablation
+
+Two fresh-context arms, ~12-13 minutes each, isolated (pre-campaign worktree /
+bare directory, own Inductor caches, GPU serialized), same judge. arm-bare
+(evaluator only): 13/13 PASS, center 4.09x, batch-1 12.95x -- fast to raw
+numbers -- but reduced precision never tested, the padding fallback shipped
+unverified by its own admission, and shape #14 produced nothing. arm-noskills
+(harness discipline, no skills): no new kernels, yet a calibrated dispatch at
+9/9 PASS with legal bf16/fp16 lanes, and it independently rediscovered the
+compiled-reference unsatisfiability in 12 minutes -- the campaign's central
+measurement insight, produced twice by the same discipline in isolated
+sessions. The full arm's differentiating output (seq-1024 16.1x = 2x the bare
+arm, the stress axis, never-behind-the-opponent) is exactly the noskills arm's
+"not attempted for budget" list. Contaminations disclosed in
+runs/ablation/REPORT.md. The framework's claim, stated honestly: not "you
+cannot get 4x without it," but "it converts effort into ceiling, coverage,
+and findings that reproduce."

@@ -1,0 +1,48 @@
+=== Configuration ===
+TransformerConfig(batch_size=32, seq_len=100000, d_model=1024, num_heads=16, ffn_dim=1024, num_layers=2, causal=True)
+device=cuda, dtype=torch.float32, torch=2.8.0+cu128
+gpu=NVIDIA RTX 6000 Ada Generation
+
+=== Accuracy check ===
+criterion: abs_error <= 0.002 OR relative_error <= 2.00%
+Traceback (most recent call last):
+  File "/opt/ablation/arm-bare/run_bench.py", line 12, in <module>
+    raise SystemExit(bench.main())
+                     ^^^^^^^^^^^^
+  File "/opt/ablation/arm-bare/bench/torch_transformer_benchmark.py", line 711, in main
+    accuracy_passed = run_accuracy_tests(
+                      ^^^^^^^^^^^^^^^^^^^
+  File "/opt/ablation/arm-bare/bench/torch_transformer_benchmark.py", line 391, in run_accuracy_tests
+    reference = baseline(x, valid_mask)
+                ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ablation/arm-bare/bench/torch_transformer_benchmark.py", line 168, in forward
+    x = layer(x, valid_token_mask, self.config.causal)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ablation/arm-bare/bench/torch_transformer_benchmark.py", line 140, in forward
+    x = x + self.attention(self.norm1(x), valid_token_mask, causal)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1773, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py", line 1784, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ablation/arm-bare/bench/torch_transformer_benchmark.py", line 93, in forward
+    q = self._split_heads(self.q_proj(x))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/ablation/arm-bare/bench/torch_transformer_benchmark.py", line 82, in _split_heads
+    .contiguous()
+     ^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 12.21 GiB. GPU 0 has a total capacity of 47.37 GiB of which 10.14 GiB is free. Including non-PyTorch memory, this process has 37.23 GiB memory in use. Of the allocated memory 36.73 GiB is allocated by PyTorch, and 7.70 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

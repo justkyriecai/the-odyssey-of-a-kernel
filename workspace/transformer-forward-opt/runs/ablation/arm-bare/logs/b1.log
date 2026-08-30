@@ -1,0 +1,20 @@
+=== Configuration ===
+TransformerConfig(batch_size=1, seq_len=128, d_model=128, num_heads=4, ffn_dim=128, num_layers=4, causal=True)
+device=cuda, dtype=torch.float32, torch=2.8.0+cu128
+gpu=NVIDIA RTX 6000 Ada Generation
+
+=== Accuracy check ===
+criterion: abs_error <= 0.002 OR relative_error <= 2.00%
+trial 01/5: PASS | max_abs=0.000645041 | max_rel=1.31011 | failed=0/16384
+trial 02/5: PASS | max_abs=0.000604689 | max_rel=1.87742 | failed=0/16384
+trial 03/5: PASS | max_abs=0.000798762 | max_rel=196.685 | failed=0/16384
+trial 04/5: PASS | max_abs=0.000588417 | max_rel=0.735437 | failed=0/16384
+trial 05/5: PASS | max_abs=0.000587404 | max_rel=2.57612 | failed=0/16384
+summary: PASS | max_abs=0.000798762 | max_rel=196.685 | failed=0/81920
+
+=== Performance benchmark ===
+timing excludes random-data generation and uses a fixed input
+CUDA latency is measured with torch.cuda.Event on the current stream
+baseline : median=1.4718 ms | mean=1.4782 ms | p90=1.4910 ms | min=1.4471 ms | throughput=86969.76 token/s
+optimized: median=0.1136 ms | mean=0.1159 ms | p90=0.1139 ms | min=0.1132 ms | throughput=1126284.66 token/s
+speedup  : 12.950x based on median latency

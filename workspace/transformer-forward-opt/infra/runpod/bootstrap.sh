@@ -10,7 +10,8 @@
 #                                claude, gh, the npm cache
 #   /workspace/tools/gh-config/  gh's auth token, so a new pod stays logged in
 #   /workspace/tools/.claude*    Claude Code state, linked from ~ by pod.sh
-#   /workspace/odyssey/          this repository, with its .venv
+#   /workspace/odyssey/          this repository; its .venv is a symlink to
+#                                /opt/odyssey-venv on the pod's local disk
 #   /workspace/env.sh            sourced by every shell; maintained by hand,
 #                                copied from infra/runpod/env.sh if absent
 #
@@ -30,6 +31,7 @@ NODE_VERSION="${NODE_VERSION:-24}"
 NVM_VERSION="${NVM_VERSION:-v0.40.1}"
 GH_VERSION="${GH_VERSION:-2.98.0}"
 PYTHON_VERSION="${PYTHON_VERSION:-3.12}"
+VENV_DIR="${VENV_DIR:-/opt/odyssey-venv}"   # local disk: see the note by setup_env.sh below
 INFRA="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 step() { printf '\n=== %s ===\n' "$1"; }
@@ -55,6 +57,9 @@ export UV_TOOL_DIR="$TOOLS/uv-tools"
 export UV_TOOL_BIN_DIR="$TOOLS/bin"
 export NPM_CONFIG_CACHE="$TOOLS/npm-cache"
 export GH_CONFIG_DIR="$TOOLS/gh-config"
+# The venv lands on local disk while this cache is on the volume; uv cannot
+# hardlink across the two and warns on every install unless told to copy.
+export UV_LINK_MODE=copy
 unset NPM_CONFIG_PREFIX PREFIX 2>/dev/null || true
 
 # The volume refuses chown, and GNU tar as root restores ownership by default:
@@ -134,10 +139,12 @@ else
   git -C "$REPO" pull --ff-only || true
   git -C "$REPO" submodule update --init --recursive
 fi
-# uv picks a managed interpreter (installed under the volume) for the venv,
-# so the venv keeps working when the pod image changes. Not exported: the
-# preference is for this one command, not for every uv call afterwards.
-( cd "$REPO" && UV_PYTHON_PREFERENCE=only-managed PYTHON_VERSION="$PYTHON_VERSION" ./scripts/setup_env.sh )
+# The venv inherits the image's torch and lives on local disk. Both matter on
+# this pod: the image's torch is built against the same nvcc and Nsight Compute
+# the image ships, and a 4+ GB wheel on the network volume makes every
+# interpreter start read ~12k files over NFS. The cost is that the venv does not
+# survive the pod -- re-run setup_env.sh on the next one, which is seconds.
+( cd "$REPO" && VENV_DIR="$VENV_DIR" PYTHON_VERSION="$PYTHON_VERSION" ./scripts/setup_env.sh )
 
 step "[6/6] env.sh"
 if [[ ! -f "$WORKSPACE/env.sh" ]]; then

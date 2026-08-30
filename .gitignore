@@ -10,7 +10,9 @@
 # Python
 __pycache__/
 *.py[cod]
-.venv/
+# No trailing slash: on a box whose checkout sits on a network volume, .venv is
+# a symlink to a venv on local disk, and `.venv/` would not match it.
+.venv
 venv/
 .cache/
 build/

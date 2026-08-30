@@ -57,5 +57,16 @@ nvm() {
 
 export ODYSSEY_ROOT="/workspace/odyssey"
 
+# The venv goes on the pod's local disk, never on the volume. It holds no torch
+# -- the image's copy is inherited -- but even the rest reads faster locally,
+# and the volume is 9.4 GB with a 4+ GB wheel happy to fill it. $ODYSSEY_ROOT
+# keeps a .venv symlink pointing here, so every script's default still works.
+# Rebuild after a new pod with: cd $ODYSSEY_ROOT && ./scripts/setup_env.sh
+export VENV_DIR="/opt/odyssey-venv"
+
+# The cache is on the volume and the venv is not, so uv cannot hardlink between
+# them and says so on every install. Copying is what it falls back to anyway.
+export UV_LINK_MODE=copy
+
 # Machine-local additions (API keys belong here, not in this file).
 [ -f "/workspace/env.local.sh" ] && . "/workspace/env.local.sh"

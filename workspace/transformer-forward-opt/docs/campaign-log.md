@@ -89,3 +89,39 @@ scores+softmax+masking (~6.8 ms/layer); Inductor does not perform that rewrite.
 Open at end of session: draft.md with ranked directions (workflow synthesis
 done: compile-inside-candidate is the spine, flash-fp32 for the stress shape),
 then /humanize:gen-plan and the RLCR loop.
+
+## 2026-08-30 -- the admissible opponent, and an artifact caught
+
+**Plan converged (one review round, adversarial subagents standing in for the
+unavailable Codex CLI -- user-approved substitution).** Decisions recorded in
+docs/plan.md: the opponent is the fastest *numerically admissible* compiled
+config at official default flags; stress evidence is an official-script sweep
+to the memory ceiling plus a labeled off-script chunked comparison; the manual
+graph insurance stays gated; targets are direction, not gates.
+
+**M0.2: the admissible ceiling, measured per-case in fresh processes** (27
+rows, notes=`M0.2 admissible ceiling`). `reduce-overhead` is the opponent on
+every fp32 lane: center 0.368 ms (drift 6.99e-4, PASS), batch-1 0.133 ms,
+batch-128 0.683 ms, heads-16 0.777 ms, seq-1024 24.77 ms, wide-1024 7.64 ms.
+In bf16/fp16 *no* compiled mode is admissible -- 0.0625/0.0098 drift even at
+mode=default, i.e. Inductor's reduced-precision softmax fusion, not Triton GEMM
+templates -- so the admissible reduced-precision opponent is eager itself, and
+graph-safe (max_abs=0, 2.57x) already leads that lane legally.
+`max-autotune --no-allow-tf32` is near-exact (1.4e-6) but never the fastest
+admissible option, and craters wide-1024 to 0.44x (IEEE Triton GEMMs vs cuBLAS
+TF32).
+
+**A prior conclusion corrected.** The L2 reading "compile does not touch
+seq-1024/batch-128" was an artifact: that sweep ran 36 `main()` calls in one
+process, tripping dynamo's recompile limit (8 per code object), after which
+"compiled" baselines silently ran eager. Fresh-process truth: RO gets 3.15x on
+seq-1024 (24.8 ms) and 2.3x on batch-128. Our sdpa lead at seq-1024 is
+therefore 1.28x over the admissible opponent, not 4x. Recorded as bitlesson
+BL-1 and in the goal tracker's evolution log; the official-grid rows
+(52/52 PASS fp32, batch-10000 first numbers: fused-sdpa 2.30x) are unaffected
+-- that sweep was uncompiled.
+
+Scoreboard vs the admissible opponent, fp32: behind 1.60x on center
+(0.589 vs 0.368), behind ~1.4x batch-1 (0.192 vs 0.133); ahead 1.28x seq-1024,
+ahead at batch-10000 (opponent unmeasured there yet). bf16/fp16: legally ahead
+everywhere measured. Next: the compile-fused candidate.

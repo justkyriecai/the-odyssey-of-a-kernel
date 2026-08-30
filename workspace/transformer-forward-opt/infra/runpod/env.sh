@@ -68,5 +68,10 @@ export VENV_DIR="/opt/odyssey-venv"
 # them and says so on every install. Copying is what it falls back to anyway.
 export UV_LINK_MODE=copy
 
-# Machine-local additions (API keys belong here, not in this file).
-[ -f "/workspace/env.local.sh" ] && . "/workspace/env.local.sh"
+# Machine-local additions (API keys belong here, not in this file). Written as
+# an `if`, not `&&`: this is the last statement in the file, so when the file is
+# absent an `&&` list would make `source` itself return 1 -- and any caller
+# running under `set -e` (pod.sh does) would exit here without printing a word.
+if [ -f "/workspace/env.local.sh" ]; then
+  . "/workspace/env.local.sh"
+fi

@@ -51,6 +51,21 @@ publishes the evaluation shapes in advance and permits branching on them.
 | Phase 2 | Profiling-guided optimization, five iterations per direction | [`prompts/transformer-layer/phase2.md`](prompts/transformer-layer/phase2.md) |
 | Phase 3 | Shape-group specialization and a conservative dispatch table | [`prompts/transformer-layer/phase3.md`](prompts/transformer-layer/phase3.md) |
 
+```mermaid
+flowchart LR
+    P1["Phase 1<br/>one correct implementation"] --> P2["Phase 2<br/>profile-guided optimization"]
+    P2 --> P3["Phase 3<br/>shape-group specialization"]
+    NCU["runs/profile/<br/>NCU reports"] -->|evidence| P2
+
+    P1 & P2 & P3 -->|every measurement| CSV["runs/benchmark.csv"]
+    P1 & P2 & P3 -->|every candidate + parent link| DAG["runs/solutions.jsonl"]
+
+    CSV --> CAL["odyssey calibrate"]
+    CAL --> TBL["runs/dispatch_table.json"]
+    TBL --> DSP["dispatch candidate<br/>(baseline fallback)"]
+    DSP --> GATE["official script gate<br/>unmodified main() &rarr; exit 0/2"]
+```
+
 Their post-contest ablation found the plan/execute/verify harness dominated the
 knowledge base and the profiler skill. This project takes that at face value:
 install the harness, and spend the saved time on specialization and evidence

@@ -3,8 +3,8 @@
 #
 # Run it on every new pod, first thing. Everything it touches lives on the
 # container disk, which does not survive a terminate: the links from ~ into the
-# volume, the .bashrc hook, tmux. It is idempotent and takes seconds; the tools
-# themselves are already on the volume.
+# volume, the .bashrc hook, tmux, nsys, and the venv. It is idempotent and takes
+# seconds; the tools that persist are already on the volume.
 #
 # Must be run with `bash pod.sh`, not sourced: `set -e` would otherwise stay
 # behind in the interactive shell and close it on the next failing command.
@@ -89,9 +89,43 @@ cat "$tmp" > "$rc"      # keep the inode; the file may be a link
 rm -f "$tmp"
 ok "$rc sources $ENV_SH"
 
-step "D0 gate"
+# Everything below needs the volume's PATH and VENV_DIR.
 # shellcheck disable=SC1090
 source "$ENV_SH"
+
+step "nsight systems"
+# The CUDA images ship ncu but not nsys, and ncu is the one the driver refuses
+# on a container without CAP_SYS_ADMIN. nsys traces through CUPTI rather than
+# the performance counters, so it works where ncu does not -- per-kernel time,
+# launch counts, the gaps between kernels. docs/runpod.md, "The NCU question".
+# It installs onto the container disk, which is why this is here and not in
+# bootstrap.sh: it has to happen again on every pod.
+if command -v nsys >/dev/null 2>&1; then
+  ok "$(nsys --version | tail -1)"
+else
+  pkg="nsight-systems"
+  ver="$(nvcc --version 2>/dev/null | sed -n 's/.*release \([0-9]*\)\.\([0-9]*\).*/\1-\2/p')"
+  if [[ -n "$ver" ]]; then pkg="cuda-nsight-systems-$ver"; fi
+  if (apt-get update -qq && apt-get install -y -qq "$pkg") >/dev/null 2>&1; then
+    ok "installed $pkg"
+  else
+    warn "could not install $pkg -- nsys profiling unavailable"
+  fi
+fi
+
+step "python environment"
+# The venv lives on the pod's local disk (VENV_DIR, set in env.sh) so that the
+# network volume never holds torch. The repository survives a terminate and the
+# venv does not, so rebuild it here. It costs seconds: torch comes from the
+# image and only the small packages are installed.
+venv="${VENV_DIR:-$REPO/.venv}"
+if [[ -x "$venv/bin/python" ]]; then
+  ok "$("$venv/bin/python" -c 'import torch,sys;print(f"python {sys.version.split()[0]}  torch {torch.__version__}")')"
+else
+  ( cd "$REPO" && ./scripts/setup_env.sh ) || warn "setup_env.sh failed -- no venv, nothing can run"
+fi
+
+step "D0 gate"
 if [[ -x "$REPO/scripts/check_gpu.sh" ]]; then
   "$REPO/scripts/check_gpu.sh" transformer-forward-opt || warn "check_gpu.sh reported NOT READY -- read it before renting more hours"
 else

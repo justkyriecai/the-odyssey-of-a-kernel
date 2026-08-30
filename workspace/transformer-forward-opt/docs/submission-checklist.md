@@ -50,8 +50,8 @@ done at the last minute.
       budget spent, verdict) — `docs/precision-budget.md`.
 - [ ] Failure record present: every direction that hit the five-iteration cap,
       with the evidence that killed it.
-- [ ] Environment disclosure: GPU, driver, CUDA runtime, torch version — all
-      already columns in `benchmark.csv`; quote them.
+- [ ] Environment disclosure: GPU, driver, CUDA runtime, torch version — the
+      `gpu`, `driver`, `cuda` and `torch` columns of `benchmark.csv`; quote them.
 - [ ] Prior work cited (the workflow source, KernelWiki, ncu-report-skill,
       humanize, KernelBench) — cited work reads as judgment, hidden work reads
       as risk.

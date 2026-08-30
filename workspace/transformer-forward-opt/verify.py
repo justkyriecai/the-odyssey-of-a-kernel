@@ -56,7 +56,7 @@ CASE_FLAGS = {
 CASE_FIELDS = (*CASE_FLAGS, "causal")
 
 RECORD_FIELDS = [
-    "timestamp", "git_sha", "git_dirty", "script_md5", "device", "gpu", "torch",
+    "timestamp", "git_sha", "git_dirty", "script_md5", "device", "gpu", "torch", "cuda", "driver",
     "candidate", "case", *CASE_FIELDS, "script_args", "atol", "rtol",
     "passed", "max_abs", "max_rel",
     "baseline_median_ms", "baseline_p90_ms", "optimized_median_ms", "optimized_p90_ms",
@@ -207,6 +207,30 @@ def gpu_name() -> str:
         return ""
 
 
+def cuda_runtime() -> str:
+    """The CUDA runtime the torch wheel bundles (`torch.version.cuda`); empty on CPU builds."""
+    try:
+        import torch
+
+        return (torch.version.cuda or "") if torch.cuda.is_available() else ""
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def driver_version() -> str:
+    """The host NVIDIA driver, from nvidia-smi. The one version a rented box does
+    not let you choose, and the first thing to quote when a number fails to
+    reproduce on a different host."""
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-gpu=driver_version", "--format=csv,noheader"],
+            capture_output=True, text=True, check=True, timeout=10,
+        ).stdout.strip()
+        return out.splitlines()[0].strip() if out else ""
+    except Exception:  # noqa: BLE001 - no driver is a valid state on a laptop
+        return ""
+
+
 def record(rows: list[dict[str, Any]], path: Path = BENCHMARK_CSV) -> int:
     """Append-only. The header is written once; a different header is an error."""
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -274,7 +298,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
     module = load_script()
     md5 = script_md5()
-    sha, dirty, gpu = _git("rev-parse", "--short", "HEAD"), bool(_git("status", "--porcelain")), gpu_name()
+    sha, dirty = _git("rev-parse", "--short", "HEAD"), bool(_git("status", "--porcelain"))
+    gpu, cuda, driver = gpu_name(), cuda_runtime(), driver_version()
 
     rows: list[dict[str, Any]] = []
     for name in args.candidates:
@@ -286,7 +311,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             code, text = run_case(module, cls, script_args, quiet=args.quiet)
             row = {
                 "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                "git_sha": sha, "git_dirty": dirty, "script_md5": md5, "gpu": gpu,
+                "git_sha": sha, "git_dirty": dirty, "script_md5": md5,
+                "gpu": gpu, "cuda": cuda, "driver": driver,
                 "candidate": name, "case": case["name"],
                 **{field: case.get(field, "") for field in CASE_FIELDS},
                 "script_args": " ".join(extra),

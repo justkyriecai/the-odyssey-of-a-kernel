@@ -222,7 +222,11 @@ Paths in this directory's docs and prompts are relative to this directory.
 EOF
 fi
 
-(cd "$ROOT_DIR" && python3 scripts/build_prompts.py >/dev/null)
+# The repository venv, not whatever `python3` resolves to: a system Python can
+# be far older than build_prompts.py expects.
+PY_BIN="${PY:-$ROOT_DIR/.venv/bin/python}"
+if [[ ! -x "$PY_BIN" ]]; then PY_BIN="python3"; fi
+(cd "$ROOT_DIR" && "$PY_BIN" scripts/build_prompts.py >/dev/null)
 
 echo "workspace/$NAME"
 find "$WS" -type f | sed "s#$ROOT_DIR/##" | sort

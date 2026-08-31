@@ -1,0 +1,45 @@
+{
+  "name": "stress-sweep",
+  "description": "The stress geometry (official #14: B=32, d=1024, H=16, L=2, causal) with seq_len swept toward the memory ceiling. The eager reference holds ~2 concurrent S x S fp32 score copies, ~4096*S^2 bytes at these dims, so on 48 GB the ceiling sits near S=3000: S=2048 is expected solid, S=2816 marginal, S=100000 (the real #14) unreachable for the reference on any hardware. These cases exist so the flash path's correctness at the stress geometry is judged by the unmodified official script as far up the axis as the reference itself can go.",
+  "defaults": {
+    "batch_size": 32,
+    "seq_len": 1024,
+    "d_model": 1024,
+    "num_heads": 16,
+    "ffn_dim": 1024,
+    "num_layers": 2,
+    "causal": true,
+    "dtype": "float32",
+    "padding_ratio": 0.0,
+    "input_scale": 1.0
+  },
+  "cases": [
+    {
+      "name": "stress-s512",
+      "seq_len": 512
+    },
+    {
+      "name": "stress-s1024"
+    },
+    {
+      "name": "stress-s1024-padded",
+      "padding_ratio": 0.4,
+      "note": "the padded lane of the stress geometry; the flash kernel's per-row lengths must survive it"
+    },
+    {
+      "name": "stress-s2048",
+      "seq_len": 2048,
+      "note": "expected solid: ~17 GB of reference scores"
+    },
+    {
+      "name": "stress-s2816",
+      "seq_len": 2816,
+      "note": "expected marginal: ~32 GB of reference scores plus activations"
+    },
+    {
+      "name": "stress-s3072",
+      "seq_len": 3072,
+      "note": "the ceiling probe: ~38 GB of reference scores plus activations on a 48 GB card; expected marginal-to-OOM, and either outcome is the recorded evidence for where the official script stops"
+    }
+  ]
+}

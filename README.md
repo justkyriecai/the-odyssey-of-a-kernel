@@ -2,6 +2,11 @@
 
 # The Odyssey of a Kernel
 
+![CUDA](https://img.shields.io/badge/CUDA-GPU_Kernels-76B900?style=for-the-badge&logo=nvidia&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-torch.compile-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
+![NVIDIA Nsight Compute](https://img.shields.io/badge/NVIDIA_Nsight-Compute-76B900?style=for-the-badge&logo=nvidia&logoColor=white)
+![RTX 6000 Ada](https://img.shields.io/badge/Benchmarked-RTX_6000_Ada-111111?style=for-the-badge&logo=nvidia&logoColor=76B900)
+
 **[Explore the website →](https://claude.ai/code/artifact/62c1b102-89ac-4e52-9aa2-b4c19224acd6)**
 
 *An autonomous agent framework for GPU kernel optimization: the agent does the
@@ -42,6 +47,18 @@ judge:
   ship at max_abs = 0 and ~2.5x over eager.
 - **77% of the card's measured TF32 roof** on the GEMM-bound shape -- a roofline
   drawn from ceilings timed on the card, never spec sheets.
+
+### Results at a glance
+
+![Speedup across the 13 official benchmark shapes](assets/results-official-shape-speedups.png)
+
+*Median speedup through the organizer's unmodified script. Every official shape
+stays above the 1× eager baseline; the attention-dominated lane reaches 16.1×.*
+
+![Attention scaling and correctness error budget](assets/results-attention-scaling-error-budget.png)
+
+*Left: attention-axis scaling through the unmodified script. Right: maximum
+absolute error as a share of the evaluator's tolerance for each served lane.*
 
 Behind the numbers: ~400 recorded measurements and a 19-node search DAG, every
 wrong turn included. Provenance for each figure:

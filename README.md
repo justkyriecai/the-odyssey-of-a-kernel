@@ -1,10 +1,14 @@
 # The Odyssey of a Kernel
 
-An agent harness for kernel optimization: three phase prompts, two research
-skills, one plan/execute/verify loop, and the recording discipline that turns
-an agent's search into evidence. Clone it, start a workspace for your operator,
-paste a phase prompt into an agent session, and the agent does the rest --
-including writing down every branch it tried and why it died.
+*An autonomous agent framework for GPU kernel optimization: the agent does the
+exploring, tuning, measuring and record-keeping; you choose the directions; it
+delivers the kernel plus the full map of every branch tried.*
+
+An agent harness in the concrete sense: three phase prompts, four skills, one
+plan/execute/verify loop, and the recording discipline that turns an agent's
+search into evidence. Clone it, start a workspace for your operator, paste a
+phase prompt into an agent session, and the agent does the rest -- including
+writing down every branch it tried and why it died.
 
 > Every AI company employs people whose job is making one matrix multiply 20%
 > faster. It is the highest-paid, least scalable work in the industry.
@@ -14,6 +18,31 @@ method is the project. The first workspace is **TikTok TechJam 2026 Track 3** --
 a transformer layer, faster than the organizer's baseline under a
 zero-bad-element correctness check -- and it is the worked example for every
 workspace after it: [`workspace/transformer-forward-opt/`](workspace/transformer-forward-opt/).
+
+## What the first voyage brought home
+
+One day, one rented RTX 6000 Ada, the organizer's unmodified script as the only
+judge:
+
+- **Never slower than the eager baseline, anywhere.** 13/13 official shapes at
+  the zero-bad-element tolerance -- worst case 1.23x, best 12.3x, and **16.1x**
+  where attention dominates.
+- **Ahead of the strongest numerically admissible `torch.compile`
+  configuration** on every measured lane -- after the agent proved that
+  `max-autotune` itself fails the benchmark's own tolerance.
+- **The shape no reference can run** -- at S=100,000 the baseline needs ~12.8 TB
+  of score tensors -- served in 23.2 s, zero bad elements out of 3.28 billion,
+  judged by the script's own comparator (labeled off-script, never claimed as
+  an official pass).
+- **Bit-exact where no compiled path is numerically legal**: bf16/fp16 lanes
+  ship at max_abs = 0 and ~2.5x over eager.
+- **77% of the card's measured TF32 roof** on the GEMM-bound shape -- a roofline
+  drawn from ceilings timed on the card, never spec sheets.
+
+Behind the numbers: ~400 recorded measurements and a 19-node search DAG, every
+wrong turn included. Provenance for each figure:
+[`workspace/transformer-forward-opt/README.md`](workspace/transformer-forward-opt/README.md)
+and [`docs/campaign-log.md`](workspace/transformer-forward-opt/docs/campaign-log.md).
 
 ## What is in the box
 
@@ -46,8 +75,19 @@ Three stages, adapted from the workflow HAN Lab Kernel Mafia used to take 1st,
 | Phase 3 | Shape-group specialization behind a conservative dispatch policy | `prompts/phase3.md` |
 
 Each phase is one prompt, pasted into a fresh session started in the workspace
-directory. Inside a phase the agent runs humanize's loop: draft the plan in
-`docs/draft.md`, `/humanize:gen-plan`, `/humanize:start-rlcr-loop`.
+directory. Inside a phase, one loop runs end to end:
+
+1. **Plan** the attempt -- draft in `docs/draft.md`, then `/humanize:gen-plan`
+   and `/humanize:start-rlcr-loop`;
+2. **Implement** the candidate;
+3. **Measure** it through the unmodified evaluator -- the only judge;
+4. **Profile** -- the next move comes from the timeline, not intuition;
+5. **Record** -- every measurement into `runs/benchmark.csv`; every candidate,
+   rejected branches included, onto `runs/solutions.jsonl`;
+6. **Review** -- adversarial, fresh-context, at round boundaries.
+
+Five iterations per direction, then move on. The agent takes the toil; the
+human keeps the helm: directions, targets, judgment.
 
 ```mermaid
 flowchart LR
@@ -163,3 +203,9 @@ and the most expensive to get wrong.
 - [KernelWiki](https://github.com/mit-han-lab/KernelWiki) and
   [ncu-report-skill](https://github.com/mit-han-lab/ncu-report-skill) -- kernel research and profile reading.
 - [KernelBench](https://scalingintelligence.stanford.edu/blogs/kernelbench/) -- the external yardstick for how hard LLM-written kernels are.
+
+## License
+
+[MIT](LICENSE). The vendored skills under `skills/odyssey-kernelwiki/` and
+`skills/odyssey-ncu-report/` carry their upstream MIT licenses; each one's
+`VENDORED.md` records where it came from.

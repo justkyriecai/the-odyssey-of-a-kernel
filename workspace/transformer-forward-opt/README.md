@@ -12,8 +12,9 @@ Paths below are relative to this directory. Commands assume the repository's
 
 ## Status
 
-Campaign complete through two RLCR rounds on an RTX 6000 Ada (sm_89, driver
-580.126.20, torch 2.8.0+cu128). Every number below is the organizer's script at
+Campaign complete through four RLCR rounds, the phase-3 deliverables and a
+two-arm ablation on an RTX 6000 Ada (sm_89, driver 580.126.20, torch
+2.8.0+cu128). Every number below is the organizer's script at
 the official tolerance (`--atol 0.002 --rtol 0.02`), median latency, recorded
 in `runs/benchmark.csv`; `runs/dispatch_table.json` routes each geometry to the
 candidate that won it under the worst-case admission rule.
@@ -21,9 +22,10 @@ candidate that won it under the worst-case admission rule.
 Dispatch validation, official grid (eager baseline denominator):
 
 ```
-batch-1   12.3x   seq-1024  11.8x   batch-10000  3.1x   center     3.9x
-seq-32     9.0x   batch-16   8.3x   narrow-32    6.7x   heads-1    4.7x
-heads-2    4.4x   heads-16   3.5x   batch-128    2.3x   wide-1024  1.2x
+seq-1024    16.1x   batch-1    12.3x   batch-4    10.9x   seq-32     9.0x
+batch-16     8.3x   narrow-32   6.7x   heads-1     4.7x   heads-2    4.4x
+batch-10000  3.9x   center      3.9x   heads-16    3.5x   batch-128  2.3x
+wide-1024    1.2x
 ```
 
 Worst case 1.23x -- never slower than the baseline anywhere, and never behind
@@ -31,7 +33,7 @@ the strongest *numerically admissible* `torch.compile` configuration of the
 baseline on any measured lane (the plain `max-autotune` baseline fails the
 official tolerance itself: max_abs 0.0053 fp32, 0.0625 bf16). Shape #14
 (S=100000), which the script's own reference cannot run on any hardware, is
-served at 25.5 s with an off-script chunked comparison recording 0 bad
+served at 23.2 s with an off-script chunked comparison recording 0 bad
 elements of 3.28e9 -- labeled off-script, never claimed as an official pass.
 bf16/fp16 lanes ship the bit-exact graph-captured path (max_abs = 0).
 
@@ -44,7 +46,7 @@ The full narrative with every measurement's provenance: `docs/campaign-log.md`.
 | `verify.py` | The organizer's script, unmodified, with a candidate patched in. Its `main()`, its output, its exit code. `--record` appends its numbers to `runs/benchmark.csv` |
 | `bench/official/` | The evaluator, vendored unmodified, md5 recorded, plus a note on its two contradictions |
 | `bench/shapes/` | `smoke` (CPU correctness, every causal × padding combination), `dev` (nine cases around the grid's center), `official` (the 14 appendix shapes) |
-| `kernels/` | Candidates: `passthrough` (control), `fused-safe`, `fused-sdpa`, `graph-safe`, `graph-sdpa`, `dispatch` (the shipping layer; `python kernels/dispatch.py calibrate` builds its table) |
+| `kernels/` | Candidates: `passthrough` (control), `fused-*`, `graph-*`, `compiled-*` (the body -- and the opponent itself -- compiled inside the candidate), `flash-*` (the Triton attention kernel, its IEEE sibling, and the `flash-c` compiled hybrid), `dispatch` (the shipping layer; `python kernels/dispatch.py calibrate` builds its table) |
 | `prompts/` | The three phase prompts, built from `_shared.md` |
 | `docs/benchmark-anatomy.md` | Eight things the evaluator's source says, two of which contradict the obvious guess |
 | `docs/precision-budget.md` | What the tolerance actually buys, and where we refuse to spend it |

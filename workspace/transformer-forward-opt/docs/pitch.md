@@ -43,7 +43,8 @@ memory-bound ramp toward the compute ceiling.
 It works on this panel because the ceiling is *physical*:
 
 > This line is the card's memory bandwidth. This one is its peak arithmetic.
-> No software crosses either. We went from 11% of the roof to 74%.
+> No software crosses either. The GEMM-bound shape is served at 77% of the
+> measured roof.
 
 That sentence is true for a regulator and for a compiler engineer. It also
 closes "could you have gone faster" by drawing the wall -- one figure that says
@@ -59,8 +60,9 @@ So the middle of the talk is one genuine result out of the search DAG.
 Given 1024 tokens and roughly a hundred kernel launches per forward, the likely
 shape of it: **the win was not a faster kernel, it was fewer kernels** -- CUDA
 Graph capture plus deleting the four whole-tensor materializations per layer.
-But the value is not the finding, it is that the agent found it and there is an
-NCU report to prove it.
+But the value is not the finding, it is that the agent found it and there is a
+profile to prove it (nsys timelines on this box -- counters were denied, and
+the report says so).
 
 Which imposes one preparation rule from day one: **log everything, including the
 branches that died.** This story can be planted in advance. It cannot be
@@ -84,7 +86,7 @@ numbers are real, and the system runs.
 | Time | Beat |
 |---|---|
 | 0:00-0:25 | The thesis, and the two external yardsticks. *"Making one matmul 20% faster is the highest-paid, least scalable job in the industry."* Then KernelBench's under-20%, then the MLSys 2026 placements. |
-| 0:25-0:55 | The method, one diagram, three stages: correct, then profile-guided optimization, then shape-group specialization. Stress that it does not guess -- it reads NCU counters to choose the next move. |
+| 0:25-0:55 | The method, one diagram, three stages: correct, then profile-guided optimization, then shape-group specialization. Stress that it does not guess -- it reads the profile to choose the next move. |
 | 0:55-1:35 | The roofline filling in, and the discovery. Point cloud migrating up and to the right; say the counter-intuitive finding out loud. |
 | 1:35-2:05 | Let them pick a shape. Run it live. Then the ladder: *"what we beat is not eager PyTorch, it is `torch.compile max-autotune`."* |
 | 2:05-2:35 | The ablation, three bars. *"We didn't just build an agent -- we measured which part of it was doing the work."* |

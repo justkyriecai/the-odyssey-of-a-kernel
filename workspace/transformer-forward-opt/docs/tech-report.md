@@ -56,19 +56,22 @@ speedup over 1.05, else fall back to the baseline path.
   `torch.compile(mode=reduce-overhead)` *inside the candidate*: cuBLAS GEMM
   numerics (drift 7e-4), cudagraph trees. Serves the launch-bound group:
   batch-1 0.113 ms (12.3x eager, +18% over the opponent).
-- **compiled-sdpa** -- the same compiled body with SDPA attention pinned to the
-  mem-efficient backend. Serves batch-10000 (104.7 ms, 3.1x) where the win is
-  never materializing 2.6 GB of scores per layer.
+- **flash-c** -- the flash kernel traced into a `torch.compile(reduce-overhead)`
+  body: dynamo captures the user Triton kernel natively, so Inductor fuses the
+  LayerNorm/FFN/residual glue the eager wrapper paid ~116 launches for. Serves
+  seq-1024 (4.84 ms: 16.1x eager, 5.1x the opponent) and batch-10000 (84.6 ms,
+  3.9x), displacing the compiled-SDPA body round 1 shipped there -- at
+  batch-10000 the glue, not attention, was that body's entire deficit.
 - **compiled-base-ro** -- the baseline's own forward compiled inside the
   candidate: the admissible opponent as a servable program. Serves batch-128,
   heads-16, wide-1024 -- so "never behind the opponent" holds by construction.
 - **flash-tf32** -- a Triton online-softmax attention kernel (fp32 softmax
   recurrence, TF32 tensor-core dots, padding as per-row lengths, O(S*d)
-  memory). Serves seq-1024 at 6.50 ms (12.0x eager, 3.8x opponent) and the
-  stress axis: verified by the unmodified script to S=3072 (7.96x), and at
-  S=100000 -- unrunnable for the reference on any hardware -- 25.5 s with an
-  off-script chunked comparison (orchestrator proven exact against the script
-  at S=2048; 0 bad of 3.28e9). Its sibling flash-fp32 (IEEE dots) is the
+  memory; a round-4 tile probe found 128x64/8-warp tiles 63% faster at
+  head_dim 64). Serves the stress axis: verified by the unmodified script to
+  S=3072 (8.6x), and at S=100000 -- unrunnable for the reference on any
+  hardware -- 23.2 s with an off-script chunked comparison (orchestrator
+  proven exact against the script at S=2048; 0 bad of 3.28e9). Its sibling flash-fp32 (IEEE dots) is the
   correctness spine and the measured explanation of the trade: IEEE fp32 sits
   at 30 TFLOPS against TF32's 71 on this card.
 - **graph-safe** -- manual CUDA-graph capture over the eager-exact fused body.
@@ -79,7 +82,7 @@ speedup over 1.05, else fall back to the baseline path.
 ## 5. Results
 
 Official grid through the organizer's script, dispatch serving, official
-tolerance, median (p90 in the CSV): worst case 1.23x, best 12.3x; table in
+tolerance, median (p90 in the CSV): worst case 1.23x, best 16.1x; table in
 README. Roofline (`docs/assets/roofline.png`, measured roofs, analytic
 intensity -- byte counters denied): wide-1024's served point reaches 77% of
 the measured TF32 GEMM roof, which is why its 1.24x is near the attainable
@@ -97,7 +100,7 @@ review loop (RLCR) with adversarial fresh-context reviewers at round
 boundaries. The reviewers materially changed the outcome: they caught the
 recompile-limit measurement corruption, a dispatch fallback that recursed, a
 cherry-picked headline (0.337 restated to the reproducible 0.362), and an
-unpinned SDPA backend. 16 DAG nodes, ~350 benchmark rows, 5 bitlessons.
+unpinned SDPA backend. 19 DAG nodes, ~390 benchmark rows, 6 bitlessons.
 
 ## 7. Limitations and what we would do with more time
 
@@ -108,11 +111,13 @@ unpinned SDPA backend. 16 DAG nodes, ~350 benchmark rows, 5 bitlessons.
   safely to the baseline path but forfeits the wins until recalibrated
   (`python kernels/dispatch.py calibrate`).
 - input_scale beyond 1.0 is a single smoke point, not a swept axis.
-- heads-16-bf16 falls back to baseline: graph-safe's 1.049x sits under the
-  1.05 admission margin -- a 4.9% win the rule refuses to vouch for.
-- The three-arm skill ablation and a second kernel through the same phases
-  (methodology deliverables) require fresh sessions and are not part of this
-  run's evidence.
+- heads-16-fp16 falls back to baseline: graph-safe's 1.027x sits under the
+  1.05 admission margin -- a 2.7% win the rule refuses to vouch for. (Its bf16
+  sibling crossed the margin in round 3, 1.083x after the mask-inversion
+  hoist, and is served.)
+- The ablation ran as two fresh-context arms against this campaign
+  (`runs/ablation/REPORT.md`, contaminations disclosed); a second kernel
+  through the same phases remains future work.
 
 ## Appendix: reproduce
 

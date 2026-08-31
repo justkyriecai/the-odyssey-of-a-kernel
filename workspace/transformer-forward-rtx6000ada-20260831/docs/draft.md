@@ -1,111 +1,151 @@
-# Phase 2 draft -- beat the compiled baseline where it is strong, keep the 4x where it is absent
+# Round 5 draft -- the reduced-precision lanes, where a 14x gap is still open
 
-Round target, set against measurement (no goalpost movement): **beat
-`torch.compile max-autotune` on the launch-bound group** -- center below
-0.33 ms fp32 / 0.23 ms bf16, batch-1 below 0.107 ms -- **while keeping the
->=4x at seq-1024 and completing the official-grid map** (batch-4/16/10000,
-narrow-32, heads-1/2, seq-32 are unmeasured). Correctness bar: official
-tolerance 0.002/0.02, zero bad elements, judged against the uncompiled eager
-reference at L0.
+Branched from `workspace/transformer-forward-opt` onto the same card (RTX 6000
+Ada, sm_89) with an empty ledger. Everything cited below is the **sibling's**
+evidence and is therefore an expectation, not this round's result. Nothing here
+may be quoted until it has been re-measured in this workspace.
+
+## Round target (set against measurement, no goalpost movement)
+
+Same framing as the sibling: beat the fastest **numerically admissible**
+`torch.compile` configuration of the baseline on every measured lane, never
+slower than the eager baseline anywhere. This round spends its iterations on
+the lanes where that bar is currently met by the smallest margin -- the
+reduced-precision lanes -- rather than on widening leads that are already
+double digits.
+
+Correctness bar unchanged: official tolerance `--atol 0.002 --rtol 0.02`, zero
+bad elements, judged against the uncompiled eager reference.
 
 ## What is known, with evidence
 
-- Eager baseline center: ~116 kernels/forward at 4-11 us median
-  (`runs/profile/00-regime-anatomy/`). Launch-bound by count.
-- The opponent rewrites the stack into ~5 fused Triton kernels/forward, zero
-  cuBLAS (same profile). Center 0.33 ms, batch-1 0.107 ms, bf16 0.23 ms
-  (`ladder L2` rows). It does not touch the attention regime: seq-1024 78 ms
-  == eager.
-- Our graph replay floors at fused-safe's kernel time: 0.64/0.59 ms center
-  (`ladder L0`), because it replays 116 unfused kernels.
-- SDPA owns seq-1024 (19.2 ms, 4.1x) via `fmha_cutlassF_f32` 3.3 ms/layer vs
-  ~6.8 ms/layer materialized; fp32 lanes drift ~1e-3 (passes 0.002), bf16/fp16
-  fail (0.0625/0.0098) -- dispatch must route reduced precision to safe paths.
-- Numerics of compiling the candidate (probe, D0): compile-default keeps cuBLAS
-  GEMMs, drift 6.99e-4 vs eager reference -> PASSES official tolerance;
-  max-autotune's Triton GEMMs drift 5.3e-3 under TF32 -> FAILS fp32. The
-  compiled bf16 baseline drifts 0.0625 from its own eager numerics, so
-  whole-graph Triton attention in bf16 is a known failure shape.
-- Noise floor: passthrough reads 0.988-1.004x across 18 rows; treat <1.5%
-  as noise. Median with p90, full dev set, always.
+From the sibling's 387-row `runs/benchmark.csv`. The dispatch validation over
+the official fp32 grid ran 16.4x (seq-1024) down to 1.25x (wide-1024), worst
+case 1.23x. That is not where the headroom is. The headroom is here:
+
+| lane | best passing | candidate | fp32 sibling lane | gap |
+|---|---|---|---|---|
+| `seq-1024-bf16` | **1.18x** | `graph-safe` | 16.43x | **14x** |
+| `seq-1024-fp16` | **1.18x** | `graph-safe` | 16.43x | **14x** |
+| `batch-128-bf16` | 1.19x | `graph-safe` | 2.37x | 2.0x |
+| `batch-128-fp16` | 1.16x | `graph-safe` | 2.37x | 2.0x |
+| `heads-16-bf16` | 1.08x | `graph-safe` | 3.67x | 3.4x |
+| `heads-16-fp16` | 1.05x | `graph-safe` | 3.67x | 3.5x |
+| `center-bf16` | 2.57x | `graph-safe` | 4.36x | 1.7x |
+
+**Every reduced-precision lane in the campaign is served by `graph-safe`**, the
+bit-exact replay path, and by nothing else.
+
+### Why: in bf16/fp16 the rule is bit-exactness, not accuracy
+
+Across all 49 reduced-precision rows, the split is total and has no middle:
+
+- Everything that **passes** records `max_abs = 0` and `max_rel = 0`.
+  `passthrough`, `fused-safe`, `graph-safe`, `dispatch`.
+- Everything that **fails** records `max_abs = 0.0625` (bf16) or `0.00586`--
+  `0.00977` (fp16), with `max_rel` between 3.6e8 and 6.0e9.
+  `compiled-*`, `fused-sdpa`, `graph-sdpa`.
+
+Two numbers explain the whole table. `0.0625 = 2^-4` is **one bf16 ULP** at
+magnitude 8--16: the failing candidates are not inaccurate, they are one
+rounding step away. And `max_rel ~ 1e9` says the binding elements are ones
+where `|ref|` is ~1e-11, so `rtol * |ref|` vanishes and the effective tolerance
+collapses to the `atol` floor of 0.002. A single ULP of a moderately sized bf16
+value is 30x that floor.
+
+So the reference's own low-precision rounding *is* the specification. Being
+more accurate than the reference fails exactly as hard as being less accurate.
+This is the "rounding-point mechanism" the sibling's goal tracker recorded, now
+with the mechanism named: **any transformation that changes a rounding point in
+bf16/fp16 is inadmissible, no matter how small its error.**
+
+That is why SDPA, flash and every Inductor GEMM template fail reduced
+precision, and why the only survivors replay the reference's exact kernels.
+
+### What that leaves as legal
+
+Bit-preserving transformations, which is a narrower set than it first looks:
+
+- Removing launch overhead. `graph-safe` does this and is the current holder.
+- Fusing elementwise work **without reassociating** anything.
+- Eliminating memory round-trips where the arithmetic per element is unchanged.
+
+And what is illegal: any change to a GEMM's accumulation order (so cuBLAS calls
+must stay the identical cuBLAS calls), and streaming/online softmax (flash's
+rescaling changes the summation order by construction).
+
+The open question this round exists to answer: `graph-safe` gets 2.57x at
+`center-bf16`, where the work is launch overhead, but only **1.18x** at
+`seq-1024-bf16`, where the work is real. Pure replay cannot help a lane that is
+not launch-bound. Is there a bit-exact transformation that can?
 
 ## Ranked directions
 
-### 1. compile-fused -- torch.compile inside the candidate, numerics-first
-The organizer's own example list includes torch.compile in the candidate.
-Compile the fused-safe body (1 QKV GEMM/layer, hoisted masks, exact fp32
-softmax); the compiled program is strictly cheaper than what Inductor turned
-into 0.33 ms, so parity is the floor.
-- Benefit: closes the 1.7x center gap; applies to every launch-bound shape.
-- Risk: numerics by mode (measured above); Inductor may pattern-match our
-  explicit softmax into SDPA and reintroduce the bf16 failure -- check max_abs
-  per dtype, disable the pattern if it fires. Graph breaks from lazy fused-QKV
-  build -- build eagerly before the compiled region. Cold-compile time must
-  land in warmup, not timed rounds.
-- Iterations (cap 5): (1) `mode=default` correct at all dtypes on dev;
-  (2) `reduce-overhead` (cudagraph trees; the principled graph-safe);
-  (3) `max-autotune` with `max_autotune_gemm_backends` restricted to
-  CUBLAS/ATEN -- Triton templates only where calibration passes; (4) dynamic
-  shape guards: one compiled artifact per official shape, `dynamic=False`;
-  (5) inductor cache priming so verify.py warmup absorbs compilation.
-- Evidence: kern_sum before/after (target: <=10 kernels/forward), dev sweep
-  rows, per-dtype max_abs table.
+### 1. `fused-exact` -- bit-exact fusion of the attention glue (rank 1)
 
-### 2. compile-sdpa -- the same compiled body with SDPA attention, fp32 lanes
-Compile fuses the LN/FFN/residual glue, SDPA skips the S x S materialization;
-the two compose and neither alone covers seq-1024 + center.
-- Benefit: seq-1024 has ~6 ms/forward of fusable glue around 13.2 ms of
-  attention; center gets SDPA on top of fusion. Also first candidate for
-  batch-10000 (2.6 GB of scores per layer never materialized).
-- Risk: fp32-lane-only by construction (bf16/fp16 route to direction 1 via
-  dispatch); backend choice must be pinned (`sdpa_kernel`), not trusted.
-- Iterations: (1) fp32 dev sweep correct; (2) pin backend per geometry;
-  (3) seq-1024 + batch-128 wins confirmed vs direction 1; (4) official-grid
-  fp32 lanes; (5) merge into dispatch.
-- Evidence: seq-1024 kern_sum (glue kernels gone), benchmark rows.
+At `seq-1024` the reference materializes `scores` as `[64, 4, 1024, 1024]` --
+268M elements, ~537 MB in bf16 -- then writes it, reads it back for the fp32
+softmax, writes `probs`, and reads that for the second GEMM. Three round trips
+of a half-gigabyte tensor per layer, four layers.
 
-### 3. official-grid completion -- measure before building anything else
-batch-4/16/10000, narrow-32, heads-1/2, seq-32 have never been run. The
-dispatch table cannot exist without them, and batch-10000 may already be won
-by existing SDPA (scores materialization is the plausible bottleneck).
-- Benefit: pure evidence; may hand us shapes for free. Zero code.
-- Risk: batch-10000 memory (audit peak; 48 GB card); stress-100k excluded
-  (script's own baseline cannot run it -- separate direction).
-- One iteration: run the four passing candidates + the two compile candidates
-  when born, `--shapes official --record` (minus stress-100k), calibrate.
+The softmax itself is elementwise-over-a-row and is done in fp32 by the
+reference. A full-row (not streaming) softmax that visits the row in the same
+order reduces in the same order, and is therefore **bit-exact by construction**
+-- unlike flash's online rescaling. So the mask, the fp32 softmax and the cast
+back to bf16 can be fused into one pass over `scores` while leaving both GEMMs
+as the identical cuBLAS calls the reference makes.
 
-### 4. flash-fp32-stress -- Triton online-softmax causal attention
-The stress shape (B=32, S=100000, d=1024, H=16, L=2) cannot run on the
-baseline at all (12.8 TB of scores); memory-efficient attention is entry, not
-optimization. Requires the off-script chunked reference for correctness.
-- Benefit: the only route to any result on shape #14; uncontested. Also a
-  candidate at seq-1024 and batch-10000.
-- Risk: highest implementation risk (hand kernel, online-softmax rescale,
-  3 masking sites); fp32 accumulation is the correctness spine (it is exactly
-  why fused-safe passes where SDPA fails).
-- Iterations: (1) Triton causal flash, fp32 accumulate, no padding; (2) key
-  padding mask; (3) chunked reference harness (off-script, documented as
-  such); (4) stress shape end-to-end + memory audit; (5) tune block sizes for
-  sm_89 (99 KB smem/SM; flashinfer PR-814 is the Ada reference point).
-- Evidence: nsys timeline on a reduced S; measured GB moved vs roofline copy
-  ceiling; the stress row itself.
+- Benefit: attacks the 14x gap directly, on the lane where it is largest, with
+  a transformation that is legal by construction rather than by luck.
+- Risk: "same order" has to be verified, not assumed -- PyTorch's softmax
+  reduction order is an implementation detail and may be tiled. If it does not
+  reproduce bit-exactly, the direction dies at iteration 2, cheaply, and that
+  null result is itself worth recording. Also: saving memory traffic only pays
+  if the lane is bandwidth-bound, which iteration 1 must establish first.
+- Iterations (cap 5): (1) **the per-dtype fidelity table** -- the sibling's own
+  open `task8`, never built: per operation, in each dtype, does a candidate
+  implementation reproduce the reference bit-exactly? This is the map the whole
+  direction navigates by, and it is cheap. (2) Profile `seq-1024-bf16` under
+  `graph-safe` and establish whether it is bandwidth- or tensor-core-bound; if
+  it is compute-bound at the cuBLAS roof, stop here and say so. (3) Fused
+  mask+fp32-softmax+cast kernel, bit-exactness gate before any timing.
+  (4) Extend the fusion to the LayerNorm/GELU/residual glue if (1) says those
+  are reproducible. (5) Dispatch integration and the full reduced-precision
+  sweep.
 
-### 5. graph-multislot -- insurance only
-Fix v2's single-slot re-capture and hoist mask construction to capture time.
-Killed the moment direction 1's cudagraph trees hold on the launch-bound
-group. Max 2 of its 5 iterations unless direction 1 fails.
+### 2. `wide-1024` -- the worst fp32 lane, against a measured roof (rank 2)
 
-### Parked
-- sdpa bf16/fp16 lanes: measured out (0.0625/0.0098). Recorded, not retried.
-- Reduced-precision probes (bf16-internal GEMMs etc.): separate named
-  candidates, run once for the precision-budget table; prior is rejection.
-- Manual Triton whole-layer fusion: only if compile-fused plateaus above the
-  opponent; five fresh iterations, new draft.
+`wide-1024` (d_model = ffn = 1024) is the weakest fp32 lane at 1.25x. Unlike
+the launch-bound lanes it is genuine GEMM work, so the honest question is not
+"how do we speed it up" but "how much room is there above cuBLAS on this card".
 
-## How a result is admitted
+- Benefit: it is the lane that sets the worst-case number, and the worst case is
+  what the target is stated in terms of.
+- Risk: the likely answer is "almost none", in which case the deliverable is a
+  roofline showing the lane is already near the measured GEMM ceiling. That is
+  a legitimate and reportable result, but it is not a speedup, which is why it
+  ranks below direction 1.
+- Iterations (cap 5): (1) re-measure `scripts/measure_ceilings.py` on this box
+  and place `wide-1024` on it; (2) profile the lane; (3) if the gap to the roof
+  is under ~15%, record the ceiling result and stop -- do not burn the
+  remaining iterations proving a known negative; (4-5) reserved.
 
-Every candidate: smoke.sh, then dev sweep recorded at official tolerance, then
-official grid before any headline number. Dispatch admits per geometry only on
-worst-case speedup >= margin with correctness on every case in the group
-(calibration rule as shipped). A speed/accuracy trade is a separate named
-candidate. Median with p90; deltas under 1.5% are noise.
+### 3. Re-establish the ledger (rank 0 -- blocks everything above)
+
+Not an optimization direction; the precondition. `runs/` is empty by design and
+no number above may be quoted until this workspace has produced it.
+
+- `./scripts/check_gpu.sh` on the box, including the profiler permission probe.
+- `./scripts/smoke.sh` -- `passthrough` at ~1.00x, zero error.
+- Re-measure the eager baseline and the admissible-compile opponent, fresh
+  process per case.
+- Re-measure `graph-safe` on the reduced-precision lanes, since it is the
+  incumbent that direction 1 must beat.
+
+## The machine
+
+No pod is running. Network volumes `cuda-lab` (US-CA-2) and `cuda-lab-lower`
+(EU-RO-1) both survive, so the checkout, the venv and the tooling come back
+with a pod attached to one of them -- `docs/runpod.md` has the procedure.
+Direction 3 cannot start until a card is up; directions 1 and 2 are planning
+only until then.

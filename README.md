@@ -1,6 +1,8 @@
-![The Odyssey of a Kernel](assets/readme-banner.png)
+[![The Odyssey of a Kernel](assets/readme-banner-wide.png)](https://claude.ai/code/artifact/62c1b102-89ac-4e52-9aa2-b4c19224acd6)
 
 # The Odyssey of a Kernel
+
+**[Explore the website →](https://claude.ai/code/artifact/62c1b102-89ac-4e52-9aa2-b4c19224acd6)**
 
 *An autonomous agent framework for GPU kernel optimization: the agent does the
 exploring, tuning, measuring and record-keeping; you choose the directions; it

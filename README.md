@@ -1,3 +1,5 @@
+![The Odyssey of a Kernel](assets/readme-banner.png)
+
 # The Odyssey of a Kernel
 
 *An autonomous agent framework for GPU kernel optimization: the agent does the
@@ -63,6 +65,8 @@ that runs its evaluator unmodified with a candidate patched in: the evaluator's
 own `main()`, its own output, its own exit code.
 
 ## Method
+
+![The Odyssey of a Kernel architecture](assets/architecture-diagram.png)
 
 Three stages, adapted from the workflow HAN Lab Kernel Mafia used to take 1st,
 2nd and 3rd across the NVIDIA tracks of the

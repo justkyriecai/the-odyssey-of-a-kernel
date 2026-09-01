@@ -44,8 +44,8 @@ day two costs a day; `docs/runpod.md` has what to do about it.
 
 ## The card
 
-**RTX 4090 for development, rented by the hour. A second card late, for the
-cross-hardware check.**
+**RTX 6000 Ada (48 GB) for development, rented by the hour** -- the card
+every row of `runs/benchmark.csv` records.
 
 The problem statement removes hardware from the competition: *"Optimize & test
 your codes on your own machine. Different methods may be used to optimize the
@@ -57,18 +57,17 @@ At the script's default shape, ~40 GFLOP of matmul over 1024 tokens is roughly
 40µs of arithmetic on an H100 against a launch overhead an order of magnitude
 larger. The roofline degenerates: every point sits in the bottom-left corner,
 the answer collapses to "use CUDA Graphs", and there is nothing else to find.
-On a 4090 the same work is a few hundred microseconds -- the same order as the
-overhead. The smaller card makes the problem *more* interesting, not less.
-
-Approximate on-demand rates as of late August 2026 -- verify before booking:
-RTX 4090 around $0.28-0.50/hr, A100 80GB around $1/hr, H100 from roughly
-$1/hr spot. Forty hours of 4090 development plus a few hours of H100 validation
-is tens of dollars, which is why none of this needs a purchase.
+On an AD102-class workstation card the same work is a few hundred
+microseconds -- the same order as the overhead -- so every regime of the grid
+stays interesting. Rented on-demand by the hour, the whole campaign cost tens
+of dollars.
 
 One caveat from the real grid: appendix shape #14 (`S=100000, d=1024, B=32`)
-does not fit a 24 GB card at fp32 -- q/k/v alone are ~38 GB -- so the 4090
-covers 13 of the 14 shapes and the stress shape belongs in the 80 GB-class
-validation hours, not the development loop. See `docs/benchmark-anatomy.md` §9.
+never fits a 24 GB card at fp32 -- q/k/v alone are ~38 GB -- and its eager
+reference cannot run anywhere at any size. On this card's 48 GB the
+batch-sliced flash kernel serves it (the recorded run peaked at 36.8 GiB),
+with the chunked reference comparison running on host memory. See
+`docs/benchmark-anatomy.md` §9.
 
 If you use a different card, **rewrite the hardware section of
 `prompts/_shared.md`** and rebuild the prompts before running them. Prompts

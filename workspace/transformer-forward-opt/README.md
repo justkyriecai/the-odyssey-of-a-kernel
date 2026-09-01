@@ -14,7 +14,8 @@ Paths below are relative to this directory. Commands assume the repository's
 
 Campaign complete through four RLCR rounds, the phase-3 deliverables and a
 two-arm ablation on an RTX 6000 Ada (sm_89, driver 580.126.20, torch
-2.8.0+cu128). Every number below is the organizer's script at
+2.8.0+cu128). The submission tech report -- environment, optimizations,
+final results -- is [`docs/tech-report.md`](docs/tech-report.md). Every number below is the organizer's script at
 the official tolerance (`--atol 0.002 --rtol 0.02`), median latency, recorded
 in `runs/benchmark.csv`; `runs/dispatch_table.json` routes each geometry to the
 candidate that won it under the worst-case admission rule.
